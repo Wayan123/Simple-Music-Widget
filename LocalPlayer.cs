@@ -19,6 +19,12 @@ public sealed class LocalPlayer : IDisposable
     private Process? _ffmpeg;
     private string? _streamTemp;
 
+    /// <summary>When true, the current track restarts on end instead of advancing.</summary>
+    public bool Loop { get; set; }
+
+    /// <summary>Raised on the UI thread when a track finishes (and Loop is off).</summary>
+    public event Action? Ended;
+
     public LocalPlayer(IntPtr hwnd)
     {
         // SMTC for a Win32/WPF window must be obtained through the interop helper.
@@ -26,9 +32,18 @@ public sealed class LocalPlayer : IDisposable
         _smtc.IsEnabled = true;
         _smtc.IsPlayEnabled = true;
         _smtc.IsPauseEnabled = true;
+        _smtc.IsNextEnabled = true;
+        _smtc.IsPreviousEnabled = true;
         _smtc.PlaybackStatus = MediaPlaybackStatus.Closed;
         _smtc.ButtonPressed += OnButtonPressed;
-        _player.MediaEnded += (_, _) => _smtc.PlaybackStatus = MediaPlaybackStatus.Stopped;
+        _player.MediaEnded += OnMediaEnded;
+    }
+
+    private void OnMediaEnded(object? sender, EventArgs e)
+    {
+        if (Loop) { _player.Position = TimeSpan.Zero; _player.Play(); return; }
+        _smtc.PlaybackStatus = MediaPlaybackStatus.Stopped;
+        Ended?.Invoke();
     }
 
     public void Play(string path, string? title = null, string? artist = null)
@@ -102,6 +117,9 @@ public sealed class LocalPlayer : IDisposable
                     _player.Pause();
                     _smtc.PlaybackStatus = MediaPlaybackStatus.Paused;
                     break;
+                case SystemMediaTransportControlsButton.Next:
+                    Ended?.Invoke();
+                    break;
             }
         });
     }
@@ -109,6 +127,7 @@ public sealed class LocalPlayer : IDisposable
     public void Dispose()
     {
         _smtc.ButtonPressed -= OnButtonPressed;
+        _player.MediaEnded -= OnMediaEnded;
         StopStream();
         _player.Close();
     }

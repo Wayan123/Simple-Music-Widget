@@ -1,121 +1,127 @@
-# Music Widget (Windows)
+<div align="center">
 
-Overlay "now playing" mini ala kontrol media taskbar Windows. **Satu widget untuk semua sumber**: apa pun yang terintegrasi dengan System Media Transport Controls (SMTC) Windows — YouTube di Chrome/Edge/Firefox, Spotify, Groove, dll — otomatis tampil dan bisa dikontrol.
+<img src="docs/icon.png" width="120" alt="Music Widget icon"/>
 
-![contoh](contoh tidak disertakan)
+# 🎵 Simple Music Widget
 
-## Kenapa "1 widget untuk semua"
+**A tiny, futuristic now-playing overlay for Windows.**
+One widget controls *everything* — YouTube & Spotify in your browser, VLC, Windows Media Player, and more.
 
-Widget ini **tidak** bicara langsung ke YouTube/Spotify. Ia membaca **SMTC** (`Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager`) — lapisan terpusat Windows yang menyatukan semua pemutar. Selama aplikasi melaporkan media ke Windows (browser modern & Spotify melakukannya), widget ini menampilkannya. Itulah sebabnya satu kode mendukung semua sumber tanpa API per-layanan.
+<img src="docs/search.png" width="360" alt="Music Widget with YouTube search"/>
 
-## Fitur
+</div>
 
-- Judul, artis, nama sumber (Chrome/Edge/Spotify/…), dan artwork album.
-- Tombol Previous / Play-Pause / Next yang benar-benar mengontrol pemutar aktif.
-- Progress bar yang bergerak (poll 500 ms + event SMTC).
-- **Tombol Close (✕)** untuk menutup widget.
-- **Buka file lokal (📄)**: pilih file audio (mp3/flac/wav/m4a/aac/ogg/wma) → diputar via MediaPlayer dan didaftarkan ke SMTC sehingga ikut muncul/terkontrol di widget.
-- **Cari + putar YouTube (🔍)** tanpa browser: cari lagu, klik hasil, audio diputar langsung di widget.
-- Overlay frameless, always-on-top, transparan, bisa digeser (drag), nempel di kanan-bawah dekat tray.
+---
 
-## Fitur YouTube — cara kerja & prasyarat
+## ✨ Why this widget?
 
-Widget memanggil **yt-dlp** untuk mencari (judul + ID) dan mengambil URL stream audio. Karena WPF `MediaPlayer` tidak bisa membuka URL stream googlevideo secara langsung, **ffmpeg** menjembatani: ia membaca stream dan mentranscode ke file MP3 lokal sementara yang diputar `MediaPlayer`. Tidak ada jendela browser, tidak ada download manual.
+Most "now playing" widgets only work with one app. This one reads Windows **System Media Transport Controls (SMTC)** — the same layer the OS uses for its taskbar media flyout — so it shows and controls **whatever you're playing**, from any app, with a single tiny window. It also adds its own **built-in YouTube audio player** (search & play without opening a browser).
 
-Prasyarat (install sekali via winget):
+- 🪶 **Lightweight** — ~85 MB working set, single small `.exe`, no heavy frameworks.
+- 🎛️ **Universal control** — prev / play-pause / next + live progress bar for any source.
+- 🔎 **YouTube search & play (audio only)** — no browser needed.
+- 🕘 **History** — past searches autocomplete; played tracks are saved and replayable.
+- ▶️ **Play all** — queue an entire result list or your history (auto-advances).
+- 🔁 **Repeat & Loop** — replay the last track, or loop the current one forever.
+- 🗑️ **One-tap delete** — remove any history item with its little ✕.
+- 🚀 **Auto-start + auto-show** — runs at boot, appears only when music plays.
+- 🔔 **Auto-update** — keeps `yt-dlp` fresh and notifies on new app releases.
+
+---
+
+## 📸 Screenshots
+
+| YouTube search & results | Play history (replay / delete / play-all) |
+|---|---|
+| <img src="docs/search.png" width="320"/> | <img src="docs/history.png" width="320"/> |
+
+---
+
+## ▶️ Demo (how it works)
+
+1. **Play music anywhere** — YouTube in Chrome/Edge, Spotify, VLC, Windows Media Player. The widget pops up at the bottom-right with the title, artist, artwork, and working controls.
+2. **Search YouTube** — click 🔎, type a song, press Enter. Pick a result to play its audio right inside the widget (no browser).
+3. **Play all** — hit **▶ Putar semua** to queue the whole list; it auto-advances track to track.
+4. **History** — open the search box: empty shows recently **played** tracks (click to replay); typing shows matching **past searches** (autocomplete). Switch tabs with **Hasil** / **Riwayat**.
+5. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current track endlessly.
+6. **Delete** — click the small ✕ on any history row to remove it.
+
+---
+
+## 🚀 Install (Windows)
+
+**Requirements:** Windows 10/11 + [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). For the YouTube feature: `yt-dlp` + `ffmpeg`.
 
 ```powershell
-winget install --id yt-dlp.yt-dlp -e
-winget install --id Gyan.FFmpeg -e
+winget install Microsoft.DotNet.SDK.8        # to build
+winget install yt-dlp.yt-dlp Gyan.FFmpeg     # for YouTube audio
 ```
 
-Widget mencari `yt-dlp.exe`/`ffmpeg.exe` di PATH, lalu fallback ke folder paket winget.
-
-> Catatan jujur: memutar audio YouTube di luar browser melanggar ToS YouTube dan rapuh terhadap perubahan YouTube/yt-dlp. Gunakan dengan kesadaran itu.
-
-## Auto-update
-
-- **yt-dlp** di-update otomatis (best-effort) saat widget start (`yt-dlp -U`), dan saat menjalankan `install.ps1` (`winget upgrade`). Ini menjaga fitur YouTube tetap jalan karena yt-dlp sering perlu update saat YouTube berubah.
-- **Aplikasi widget** mengecek GitHub Releases (`Wayan123/Simple-Music-Widget`) saat start. Jika ada versi lebih baru, muncul notifikasi di tray — klik untuk membuka halaman rilis. Update kode tetap lewat `install.ps1` setelah unduh versi baru.
-
-### Rilis versi baru (untuk maintainer)
-
-1. Naikkan `<Version>` di `MusicWidget.csproj`.
-2. Commit + push, lalu buat tag & rilis:
-   ```powershell
-   git tag -a v1.0.1 -m "v1.0.1"; git push origin v1.0.1
-   dotnet publish -c Release -o publish
-   Compress-Archive publish\* MusicWidget-v1.0.1-win-x64.zip
-   gh release create v1.0.1 MusicWidget-v1.0.1-win-x64.zip --title "v1.0.1"
-   ```
-3. Widget pengguna otomatis mendeteksi rilis baru via tray.
-
-## Prasyarat build
-
-Mesin ini punya **.NET 8 Desktop runtime** (bisa menjalankan), tapi **belum ada .NET SDK** (perlu untuk build). Install salah satu:
-
-1. **.NET 8 SDK** (rekomendasi, ringan): https://dotnet.microsoft.com/download/dotnet/8.0
-   — pilih "SDK x64". Setelah itu `dotnet` tersedia di PowerShell.
-2. Atau via Visual Studio Installer → workload **".NET desktop development"**.
-
-TFM `net8.0-windows10.0.19041.0` otomatis menarik proyeksi WinRT (`Windows.Media.Control`) saat build — **tanpa** paket NuGet tambahan.
-
-## Build & jalankan
-
-Buka **PowerShell** (bukan WSL) di folder ini:
+### One-click setup
 
 ```powershell
-cd C:\Users\wayandadang\AI\music-widget
-dotnet run -c Release
-```
-
-### Instalasi sekali klik (auto-run + akses mudah)
-
-Untuk pemakaian sehari-hari (tanpa CMD/PowerShell berulang), jalankan installer:
-
-```powershell
-cd C:\Users\wayandadang\AI\music-widget
+git clone https://github.com/Wayan123/Simple-Music-Widget.git
+cd Simple-Music-Widget
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-Installer akan:
-- Publish `publish\MusicWidget.exe` (ringan, framework-dependent).
-- Pasang **shortcut Startup** → widget otomatis jalan di background tiap Windows menyala.
-- Pasang **shortcut Start Menu** → cari "Music Widget", klik kanan → *Pin to taskbar* untuk akses cepat.
-- Menjalankan widget langsung.
+`install.ps1` builds the app, adds a **Startup** shortcut (auto-run at boot), a **Start Menu** shortcut (right-click → *Pin to taskbar*), and launches it.
 
-### Perilaku auto-detect
+### Or just run
 
-- Widget berjalan **di background** dengan ikon di **system tray**.
-- **Auto-muncul** saat ada musik diputar (Windows Media Player, VLC, YouTube/Spotify di browser, dll — apa pun yang lapor ke SMTC).
-- **Auto-sembunyi** saat musik berhenti/ditutup.
-- Tombol **✕** menyembunyikan widget (tidak keluar) — akan muncul lagi saat ada musik.
-- **Klik ikon tray** untuk menampilkan widget kapan saja (mis. untuk search YouTube saat idle); menu tray punya **Keluar** untuk benar-benar menutup.
+```powershell
+dotnet run -c Release
+```
 
-## Cara pakai
+Prefer a prebuilt binary? Grab the ZIP from [**Releases**](https://github.com/Wayan123/Simple-Music-Widget/releases/latest).
 
-1. Putar lagu/video di YouTube (browser), Spotify, dll.
-2. Widget muncul di kanan-bawah dan ikut sumber yang sedang aktif.
-3. Geser widget dengan drag. Tombol kontrol mengontrol pemutar yang sedang aktif.
+---
 
-## Catatan teknis
+## 🧠 How it stays "one widget for all"
 
-- Tidak butuh hak admin atau capability khusus untuk *desktop app* unpackaged (capability `globalMediaControl` hanya relevan untuk app UWP/packaged).
-- Jika tidak ada yang diputar, widget menampilkan "Tidak ada yang diputar".
-- Beberapa browser hanya melapor SMTC untuk tab dengan media aktif; pastikan tab tersebut benar memutar.
+It does **not** talk to YouTube/Spotify directly for control. It reads **SMTC** (`Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager`), the central layer every modern media app reports to. For its own YouTube player, `yt-dlp` resolves the audio stream and `ffmpeg` bridges it into a local file that WPF `MediaPlayer` plays (WPF can't open googlevideo URLs directly).
 
-## Struktur
+> ⚠️ Playing YouTube audio outside a browser is against YouTube's ToS and can break when YouTube changes. `yt-dlp` is auto-updated to reduce breakage.
 
-| File | Peran |
-|------|-------|
-| `MediaService.cs` | Wrapper SMTC: baca sesi aktif, snapshot, kontrol play/next/prev |
-| `LocalPlayer.cs` | MediaPlayer untuk file lokal & stream YouTube (via ffmpeg) + integrasi SMTC |
-| `YouTubeService.cs` | Search & resolve URL audio via yt-dlp; resolve path yt-dlp/ffmpeg |
-| `MainWindow.xaml(.cs)` | UI overlay + tombol close/open/search + panel hasil + posisi tray + drag + auto show/hide |
-| `TrayIcon.cs` | Ikon system tray: tampilkan widget / keluar |
-| `UpdateService.cs` | Pengecek versi via GitHub Releases API |
-| `install.ps1` | Publish + shortcut Startup (auto-run, `--autostart`) + Start Menu (pin taskbar) + update yt-dlp |
-| `App.xaml.cs` | Entry point: single-instance (mutex) + summon instance yang sudah jalan |
-| `icon.ico` / `make_icon.py` | Ikon futuristik 3D (gradient violet→cyan, equalizer neon) + generatornya |
-| `MusicWidget.csproj` | TFM WinRT + WPF |
-| `app.manifest` | Per-monitor DPI awareness |
+---
+
+## 🗂️ Project structure
+
+| File | Role |
+|------|------|
+| `MediaService.cs` | SMTC wrapper: read active session, snapshot, prev/play/next |
+| `LocalPlayer.cs` | MediaPlayer for local files & YouTube (ffmpeg bridge), loop, queue events |
+| `YouTubeService.cs` | yt-dlp search + audio-URL resolve; yt-dlp/ffmpeg path resolve |
+| `HistoryStore.cs` | JSON persistence for searches & played tracks |
+| `UpdateService.cs` | GitHub Releases version checker |
+| `TrayIcon.cs` | System-tray icon (show / exit) |
+| `App.xaml.cs` | Single-instance entry point (summons running instance) |
+| `MainWindow.xaml(.cs)` | UI overlay, search/history, queue, repeat/loop, auto show-hide |
+| `install.ps1` | Publish + Startup/Start-Menu shortcuts + yt-dlp update |
+| `make_icon.py` | Generates the futuristic 3D icon |
+
+---
+
+## 📦 Releasing a new version (maintainer)
+
+1. Bump `<Version>` in `MusicWidget.csproj`.
+2. Tag, publish, and release:
+   ```powershell
+   git tag -a v1.1.0 -m "v1.1.0"; git push origin v1.1.0
+   dotnet publish -c Release -o publish
+   Compress-Archive publish\* MusicWidget-v1.1.0-win-x64.zip
+   gh release create v1.1.0 MusicWidget-v1.1.0-win-x64.zip --title "v1.1.0"
+   ```
+3. Running widgets detect the new release and show a tray notification.
+
+---
+
+## 🐧 Linux?
+
+Not yet. The widget is built on Windows-only tech (SMTC + WPF). A Linux version would need a separate app (MPRIS/D-Bus + GTK/Qt) and is planned as a future, separate project.
+
+---
+
+## 📄 License
+
+MIT — free to use, modify, and share.

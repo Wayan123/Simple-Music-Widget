@@ -1,12 +1,25 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace MusicWidget;
+
+/// <summary>A row in the list: a YouTube result, a played-history track, or a search suggestion.</summary>
+public sealed class PlayerItem
+{
+    public required string Display { get; init; }
+    public YtResult? Track { get; init; }      // playable (result or played history)
+    public string? Query { get; init; }         // search suggestion
+    public bool Deletable { get; init; }        // history items show the x button
+    public Visibility DeleteVisibility => Deletable ? Visibility.Visible : Visibility.Collapsed;
+    public override string ToString() => Display;  // accessible name = visible text
+}
 
 public partial class MainWindow : Window
 {
@@ -16,6 +29,11 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private double _durationSec;
     private bool _autoStart;
+
+    // Queue of tracks to auto-advance through; index of the current track.
+    private readonly List<YtResult> _queue = new();
+    private int _queueIndex = -1;
+    private YtResult? _lastTrack;   // for Repeat
 
     public MainWindow()
     {
@@ -34,6 +52,15 @@ public partial class MainWindow : Window
         _tray = new TrayIcon(onShow: SummonWidget, onExit: () => System.Windows.Application.Current.Shutdown());
         if (_autoStart) Hide();          // boot: wait for music
         else SummonWidget();             // manual launch: show immediately (usable even when idle)
+
+        // Create the local/stream player (SMTC) after the window exists; guard against early init.
+        try
+        {
+            _local = new LocalPlayer(new WindowInteropHelper(this).EnsureHandle());
+            _local.Ended += () => Dispatcher.Invoke(PlayNextInQueue);
+        }
+        catch { /* SMTC for local playback unavailable; external-source control still works */ }
+
         _media.Changed += snap => Dispatcher.Invoke(() => Render(snap));
         try
         {
@@ -47,6 +74,21 @@ public partial class MainWindow : Window
         _timer.Start();
         YouTubeService.UpdateInBackground(); // keep yt-dlp fresh so YouTube keeps working
         _ = CheckUpdatesAsync();
+        TrimWorkingSet(); // release startup memory back to the OS
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool SetProcessWorkingSetSize(IntPtr proc, int min, int max);
+
+    private static void TrimWorkingSet()
+    {
+        try
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, -1, -1);
+        }
+        catch { }
     }
 
     private async System.Threading.Tasks.Task CheckUpdatesAsync()
@@ -99,16 +141,35 @@ public partial class MainWindow : Window
     }
 
     private async void OnPlayPause(object sender, RoutedEventArgs e) => await _media.PlayPauseAsync();
-    private async void OnPrev(object sender, RoutedEventArgs e) => await _media.PreviousAsync();
-    private async void OnNext(object sender, RoutedEventArgs e) => await _media.NextAsync();
+
+    private async void OnPrev(object sender, RoutedEventArgs e)
+    {
+        if (_queueIndex > 0) { _queueIndex -= 2; PlayNextInQueue(); return; }
+        await _media.PreviousAsync();
+    }
+
+    private async void OnNext(object sender, RoutedEventArgs e)
+    {
+        if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) { PlayNextInQueue(); return; }
+        await _media.NextAsync();
+    }
 
     // Bring the widget up on demand (from tray), opening search so it's usable when idle.
     private void SummonWidget()
     {
         Show();
-        if (SearchPanel.Visibility != Visibility.Visible) OnToggleSearch(this, new RoutedEventArgs());
-        Activate();
-        _ = Dispatcher.BeginInvoke(PositionNearTray, DispatcherPriority.Loaded);
+        // Defer panel-open to after layout so SizeToContent grows the window reliably.
+        _ = Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (SearchPanel.Visibility != Visibility.Visible)
+            {
+                SearchPanel.Visibility = Visibility.Visible;
+                SearchBox.Focus();
+                ShowSuggestions(SearchBox.Text);
+            }
+            Activate();
+            PositionNearTray();
+        }), DispatcherPriority.Loaded);
     }
 
     // Called when a second launch (shortcut/taskbar click) signals this running instance.
@@ -124,8 +185,23 @@ public partial class MainWindow : Window
             Filter = "Audio|*.mp3;*.flac;*.wav;*.m4a;*.aac;*.ogg;*.wma|Semua file|*.*"
         };
         if (dlg.ShowDialog() != true) return;
-        _local ??= new LocalPlayer(new WindowInteropHelper(this).Handle);
-        _local.Play(dlg.FileName);
+        _queue.Clear(); _queueIndex = -1;        // local file is standalone, not part of a YouTube queue
+        EnsurePlayer()?.Play(dlg.FileName);
+    }
+
+    // Returns the player, creating it on demand if eager init failed.
+    private LocalPlayer? EnsurePlayer()
+    {
+        if (_local is null)
+        {
+            try
+            {
+                _local = new LocalPlayer(new WindowInteropHelper(this).EnsureHandle());
+                _local.Ended += () => Dispatcher.Invoke(PlayNextInQueue);
+            }
+            catch { return null; }
+        }
+        return _local;
     }
 
     private void OnDrag(object sender, MouseButtonEventArgs e)
@@ -135,7 +211,6 @@ public partial class MainWindow : Window
 
     private void OnToggleSearch(object sender, RoutedEventArgs e)
     {
-        // If the panel is open with a query, the button runs the search; otherwise toggles.
         if (SearchPanel.Visibility == Visibility.Visible && SearchBox.Text.Trim().Length > 0)
         {
             DoSearch();
@@ -143,8 +218,7 @@ public partial class MainWindow : Window
         }
         bool show = SearchPanel.Visibility != Visibility.Visible;
         SearchPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        if (show) SearchBox.Focus();
-        // Re-anchor after the window resizes to fit the panel.
+        if (show) { SearchBox.Focus(); ShowSuggestions(SearchBox.Text); }
         _ = Dispatcher.BeginInvoke(PositionNearTray, DispatcherPriority.Loaded);
     }
 
@@ -153,42 +227,144 @@ public partial class MainWindow : Window
         if (e.Key == Key.Enter) DoSearch();
     }
 
+    // Autocomplete: as the user types, show matching past searches (or played history when empty).
+    private bool _suppressTextChange;
+    private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressTextChange) return;
+        ShowSuggestions(SearchBox.Text);
+    }
+
+    private void ShowSuggestions(string prefix)
+    {
+        prefix = prefix.Trim();
+        Results.Items.Clear();
+        if (prefix.Length == 0)
+        {
+            // Empty box: surface recently played so they can be replayed.
+            foreach (var t in HistoryStore.Played)
+                Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true });
+            return;
+        }
+        foreach (var q in HistoryStore.MatchSearches(prefix))
+            Results.Items.Add(new PlayerItem { Display = "\uE721 " + q, Query = q, Deletable = true });
+    }
+
     private async void DoSearch()
     {
         var q = SearchBox.Text.Trim();
         if (q.Length == 0) return;
+        HistoryStore.AddSearch(q);
         Results.Items.Clear();
-        Results.Items.Add("Mencari...");
+        Results.Items.Add(new PlayerItem { Display = "Mencari...", Deletable = false });
         try
         {
             var hits = await YouTubeService.SearchAsync(q);
             Results.Items.Clear();
-            if (hits.Count == 0) { Results.Items.Add("Tidak ada hasil"); return; }
-            foreach (var h in hits) Results.Items.Add(h);
+            if (hits.Count == 0) { Results.Items.Add(new PlayerItem { Display = "Tidak ada hasil" }); return; }
+            foreach (var h in hits)
+                Results.Items.Add(new PlayerItem { Display = h.Title, Track = h, Deletable = false });
         }
         catch (Exception ex)
         {
             Results.Items.Clear();
-            Results.Items.Add("Gagal: yt-dlp tidak ditemukan");
+            Results.Items.Add(new PlayerItem { Display = "Gagal: yt-dlp tidak ditemukan" });
             ArtistText.Text = ex.Message;
         }
     }
 
-    private async void OnResultPick(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void OnTabResults(object sender, RoutedEventArgs e) => ShowSuggestions(SearchBox.Text);
+
+    private void OnTabPlayed(object sender, RoutedEventArgs e)
     {
-        if (Results.SelectedItem is not YtResult r) return;
+        Results.Items.Clear();
+        foreach (var t in HistoryStore.Played)
+            Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true });
+    }
+
+    // Pick a row: play a track, or run a stored search query.
+    private void OnResultPick(object sender, SelectionChangedEventArgs e)
+    {
+        if (Results.SelectedItem is not PlayerItem item) return;
+        if (item.Query is not null)
+        {
+            _suppressTextChange = true; SearchBox.Text = item.Query; _suppressTextChange = false;
+            DoSearch();
+            return;
+        }
+        if (item.Track is null) return;
+
+        // Build a queue from the currently shown playable tracks, starting at the picked one.
+        var tracks = Results.Items.OfType<PlayerItem>().Where(i => i.Track is not null)
+                            .Select(i => i.Track!).ToList();
+        int start = tracks.FindIndex(t => t.Id == item.Track.Id);
+        StartQueue(tracks, start < 0 ? 0 : start);
+    }
+
+    private void OnPlayAll(object sender, RoutedEventArgs e)
+    {
+        var tracks = Results.Items.OfType<PlayerItem>().Where(i => i.Track is not null)
+                            .Select(i => i.Track!).ToList();
+        if (tracks.Count > 0) StartQueue(tracks, 0);
+    }
+
+    private void StartQueue(List<YtResult> tracks, int index)
+    {
+        _queue.Clear();
+        _queue.AddRange(tracks);
+        _queueIndex = index - 1;
+        PlayNextInQueue();
+        SearchPanel.Visibility = Visibility.Collapsed;
+        _ = Dispatcher.BeginInvoke(PositionNearTray, DispatcherPriority.Loaded);
+    }
+
+    private void PlayNextInQueue()
+    {
+        if (_queueIndex + 1 >= _queue.Count) return;   // queue finished
+        _queueIndex++;
+        _ = PlayTrackAsync(_queue[_queueIndex]);
+    }
+
+    private async System.Threading.Tasks.Task PlayTrackAsync(YtResult r)
+    {
+        _lastTrack = r;
+        HistoryStore.AddPlayed(r);
         TitleText.Text = "Memuat..."; ArtistText.Text = r.Title; Source.Text = "YouTube";
         try
         {
             var url = await YouTubeService.GetAudioUrlAsync(r.Id);
             if (url is null) { TitleText.Text = "Gagal memuat audio"; return; }
-            _local ??= new LocalPlayer(new WindowInteropHelper(this).Handle);
             TitleText.Text = "Buffering...";
-            await _local.PlayStreamAsync(url, r.Title, "YouTube");
-            SearchPanel.Visibility = Visibility.Collapsed;
-            _ = Dispatcher.BeginInvoke(PositionNearTray, DispatcherPriority.Loaded);
+            var pl = EnsurePlayer();
+            if (pl is null) { TitleText.Text = "Pemutar tidak tersedia"; return; }
+            await pl.PlayStreamAsync(url, r.Title, "YouTube");
         }
         catch (Exception ex) { TitleText.Text = "Gagal memuat"; ArtistText.Text = ex.Message; }
+    }
+
+    private void OnDeleteItem(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is PlayerItem item)
+        {
+            if (item.Query is not null) HistoryStore.RemoveSearch(item.Query);
+            else if (item.Track is not null) HistoryStore.RemovePlayed(item.Track.Id);
+            Results.Items.Remove(item);
+            e.Handled = true;
+        }
+    }
+
+    private void OnRepeat(object sender, RoutedEventArgs e)
+    {
+        if (_lastTrack is not null) { _queue.Clear(); _queueIndex = -1; _ = PlayTrackAsync(_lastTrack); }
+    }
+
+    private void OnToggleLoop(object sender, RoutedEventArgs e)
+    {
+        if (_local is null) return;
+        _local.Loop = !_local.Loop;
+        LoopBtn.Foreground = _local.Loop
+            ? System.Windows.Media.Brushes.LightGreen
+            : System.Windows.Media.Brushes.White;
     }
 
     // Park the widget at bottom-right, just above the taskbar.

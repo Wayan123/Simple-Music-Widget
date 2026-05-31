@@ -57,6 +57,30 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="TextBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#C8C8C8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" Background="Transparent" CornerRadius="4" Padding="6,2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#33FFFFFF"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Border CornerRadius="12" Background="#E6202020" Padding="12">
@@ -123,6 +147,10 @@
                         <Button x:Name="PrevBtn" Style="{StaticResource CtrlBtn}" Content="&#xE100;" Click="OnPrev"/>
                         <Button x:Name="PlayBtn" Style="{StaticResource CtrlBtn}" Content="&#xE768;" Click="OnPlayPause" FontSize="16"/>
                         <Button x:Name="NextBtn" Style="{StaticResource CtrlBtn}" Content="&#xE101;" Click="OnNext"/>
+                        <Button x:Name="RepeatBtn" Style="{StaticResource CtrlBtn}" Content="&#xE149;" FontSize="13"
+                                ToolTip="Putar ulang lagu terakhir" Click="OnRepeat"/>
+                        <Button x:Name="LoopBtn" Style="{StaticResource CtrlBtn}" Content="&#xE1CD;" FontSize="13"
+                                ToolTip="Loop lagu ini" Click="OnToggleLoop"/>
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -132,17 +160,45 @@
         <StackPanel x:Name="SearchPanel" Visibility="Collapsed" Margin="0,10,0,0">
             <TextBox x:Name="SearchBox" Background="#1A1A1A" Foreground="#F0F0F0"
                      BorderBrush="#444" BorderThickness="1" Padding="6,4" FontSize="12"
-                     KeyDown="OnSearchKey"/>
+                     KeyDown="OnSearchKey" TextChanged="OnSearchTextChanged"/>
+
+            <!-- Tabs + play-all -->
+            <Grid Margin="0,6,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="TabResults" Style="{StaticResource TextBtn}" Content="Hasil" Click="OnTabResults"/>
+                    <Button x:Name="TabPlayed" Style="{StaticResource TextBtn}" Content="Riwayat" Click="OnTabPlayed"/>
+                </StackPanel>
+                <Button x:Name="PlayAllBtn" Style="{StaticResource TextBtn}" HorizontalAlignment="Right"
+                        Content="&#x25B6; Putar semua" FontFamily="Segoe UI"
+                        ToolTip="Putar semua dari daftar" Click="OnPlayAll"/>
+            </Grid>
+
             <ListBox x:Name="Results" Background="Transparent" BorderThickness="0"
-                     Foreground="#E5E5E5" MaxHeight="160" Margin="0,6,0,0"
+                     Foreground="#E5E5E5" MaxHeight="180" Margin="0,4,0,0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      SelectionChanged="OnResultPick">
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="ListBoxItem">
-                        <Setter Property="Padding" Value="4,3"/>
+                        <Setter Property="Padding" Value="0"/>
                         <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     </Style>
                 </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding Display}" Padding="4,3"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Style="{StaticResource IconBtn}" Content="&#xE711;"
+                                    FontSize="10" Visibility="{Binding DeleteVisibility}"
+                                    ToolTip="Hapus dari riwayat" Click="OnDeleteItem"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
             </ListBox>
         </StackPanel>
         </StackPanel>
