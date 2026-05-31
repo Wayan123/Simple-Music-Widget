@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+publish/
+__pycache__/
+
+# User-specific / temp
+*.user
+_*.ps1
+_*.png
+_*.txt
+*.tmp
+
+# Keep these tracked: source, icon, scripts, README
+!icon.ico
+!icon-preview.png
+!widget-preview.png
+!widget-search.png
