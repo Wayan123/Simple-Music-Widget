@@ -36,7 +36,19 @@ Widget mencari `yt-dlp.exe`/`ffmpeg.exe` di PATH, lalu fallback ke folder paket 
 ## Auto-update
 
 - **yt-dlp** di-update otomatis (best-effort) saat widget start (`yt-dlp -U`), dan saat menjalankan `install.ps1` (`winget upgrade`). Ini menjaga fitur YouTube tetap jalan karena yt-dlp sering perlu update saat YouTube berubah.
-- Update **aplikasi widget sendiri** belum diaktifkan (butuh sumber rilis seperti GitHub Releases). Untuk update kode, cukup jalankan `install.ps1` lagi setelah perubahan.
+- **Aplikasi widget** mengecek GitHub Releases (`Wayan123/Simple-Music-Widget`) saat start. Jika ada versi lebih baru, muncul notifikasi di tray — klik untuk membuka halaman rilis. Update kode tetap lewat `install.ps1` setelah unduh versi baru.
+
+### Rilis versi baru (untuk maintainer)
+
+1. Naikkan `<Version>` di `MusicWidget.csproj`.
+2. Commit + push, lalu buat tag & rilis:
+   ```powershell
+   git tag -a v1.0.1 -m "v1.0.1"; git push origin v1.0.1
+   dotnet publish -c Release -o publish
+   Compress-Archive publish\* MusicWidget-v1.0.1-win-x64.zip
+   gh release create v1.0.1 MusicWidget-v1.0.1-win-x64.zip --title "v1.0.1"
+   ```
+3. Widget pengguna otomatis mendeteksi rilis baru via tray.
 
 ## Prasyarat build
 
@@ -101,7 +113,9 @@ Installer akan:
 | `YouTubeService.cs` | Search & resolve URL audio via yt-dlp; resolve path yt-dlp/ffmpeg |
 | `MainWindow.xaml(.cs)` | UI overlay + tombol close/open/search + panel hasil + posisi tray + drag + auto show/hide |
 | `TrayIcon.cs` | Ikon system tray: tampilkan widget / keluar |
-| `install.ps1` | Publish + shortcut Startup (auto-run) + Start Menu (pin taskbar) + update yt-dlp |
+| `UpdateService.cs` | Pengecek versi via GitHub Releases API |
+| `install.ps1` | Publish + shortcut Startup (auto-run, `--autostart`) + Start Menu (pin taskbar) + update yt-dlp |
+| `App.xaml.cs` | Entry point: single-instance (mutex) + summon instance yang sudah jalan |
 | `icon.ico` / `make_icon.py` | Ikon futuristik 3D (gradient violet→cyan, equalizer neon) + generatornya |
 | `MusicWidget.csproj` | TFM WinRT + WPF |
 | `app.manifest` | Per-monitor DPI awareness |
