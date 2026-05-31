@@ -147,7 +147,7 @@
                         <Button x:Name="PrevBtn" Style="{StaticResource CtrlBtn}" Content="&#xE100;" Click="OnPrev"/>
                         <Button x:Name="PlayBtn" Style="{StaticResource CtrlBtn}" Content="&#xE768;" Click="OnPlayPause" FontSize="16"/>
                         <Button x:Name="NextBtn" Style="{StaticResource CtrlBtn}" Content="&#xE101;" Click="OnNext"/>
-                        <Button x:Name="RepeatBtn" Style="{StaticResource CtrlBtn}" Content="&#xE149;" FontSize="13"
+                        <Button x:Name="RepeatBtn" Style="{StaticResource CtrlBtn}" Content="&#xE72C;" FontSize="13"
                                 ToolTip="Putar ulang lagu terakhir" Click="OnRepeat"/>
                         <Button x:Name="LoopBtn" Style="{StaticResource CtrlBtn}" Content="&#xE1CD;" FontSize="13"
                                 ToolTip="Loop lagu ini" Click="OnToggleLoop"/>

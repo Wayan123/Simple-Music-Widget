@@ -34,6 +34,7 @@ public partial class MainWindow : Window
     private readonly List<YtResult> _queue = new();
     private int _queueIndex = -1;
     private YtResult? _lastTrack;   // for Repeat
+    private bool _queueActive;      // our own queue is loading/playing; don't auto-hide
 
     public MainWindow()
     {
@@ -101,7 +102,7 @@ public partial class MainWindow : Window
 
     private void Render(MediaSnapshot s)
     {
-        // Auto-hide when nothing is playing (unless the user opened the search panel).
+        // Auto-hide when nothing is playing (unless searching or our own queue is active).
         if (!s.HasSession)
         {
             TitleText.Text = "Tidak ada yang diputar";
@@ -110,7 +111,7 @@ public partial class MainWindow : Window
             Art.Source = null;
             Progress.Value = 0;
             PlayBtn.Content = "\uE768"; // play glyph
-            if (SearchPanel.Visibility != Visibility.Visible && IsVisible) Hide();
+            if (SearchPanel.Visibility != Visibility.Visible && !_queueActive && IsVisible) Hide();
             return;
         }
 
@@ -175,7 +176,7 @@ public partial class MainWindow : Window
     // Called when a second launch (shortcut/taskbar click) signals this running instance.
     public void SummonFromTray() => SummonWidget();
 
-    private void OnClose(object sender, RoutedEventArgs e) => Hide(); // background app: hide, reappears on next music
+    private void OnClose(object sender, RoutedEventArgs e) { _queueActive = false; Hide(); } // hide; reappears on next music
 
     private void OnOpenFile(object sender, RoutedEventArgs e)
     {
@@ -185,7 +186,7 @@ public partial class MainWindow : Window
             Filter = "Audio|*.mp3;*.flac;*.wav;*.m4a;*.aac;*.ogg;*.wma|Semua file|*.*"
         };
         if (dlg.ShowDialog() != true) return;
-        _queue.Clear(); _queueIndex = -1;        // local file is standalone, not part of a YouTube queue
+        _queue.Clear(); _queueIndex = -1; _queueActive = false;  // local file is standalone
         EnsurePlayer()?.Play(dlg.FileName);
     }
 
@@ -320,7 +321,7 @@ public partial class MainWindow : Window
 
     private void PlayNextInQueue()
     {
-        if (_queueIndex + 1 >= _queue.Count) return;   // queue finished
+        if (_queueIndex + 1 >= _queue.Count) { _queueActive = false; return; }   // queue finished
         _queueIndex++;
         _ = PlayTrackAsync(_queue[_queueIndex]);
     }
@@ -328,6 +329,8 @@ public partial class MainWindow : Window
     private async System.Threading.Tasks.Task PlayTrackAsync(YtResult r)
     {
         _lastTrack = r;
+        _queueActive = true;
+        _durationSec = 0;            // reset so progress bar starts fresh for the new track
         HistoryStore.AddPlayed(r);
         TitleText.Text = "Memuat..."; ArtistText.Text = r.Title; Source.Text = "YouTube";
         try
