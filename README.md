@@ -19,7 +19,9 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 
 - 🪶 **Lightweight** — ~85 MB working set, single small `.exe`, no heavy frameworks.
 - 🎛️ **Universal control** — prev / play-pause / next + live progress bar for any source.
-- 🔎 **YouTube search & play (audio only)** — no browser needed.
+- 🔊 **Widget volume slider** — adjust the widget-owned local/YouTube player volume safely.
+- 📁 **Broad local media support** — play common audio/video containers (`mp3`, `mp4`, `mkv`, `webm`, `flac`, `ogg`, and more) by extracting audio when needed.
+- 🔎 **YouTube search & play (audio only)** — no browser needed, with clean music-template previews.
 - 🕘 **History** — past searches autocomplete; played tracks are saved and replayable.
 - ▶️ **Play all** — queue an entire result list or your history (auto-advances).
 - 🔁 **Repeat & Loop** — replay the last track, or loop the current one forever.
@@ -31,20 +33,22 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 
 ## 📸 Screenshots
 
-| YouTube search & results | Play history (replay / delete / play-all) |
-|---|---|
-| <img src="docs/search.png" width="320"/> | <img src="docs/history.png" width="320"/> |
+| YouTube search & results | Play history | Volume + template preview |
+|---|---|---|
+| <img src="docs/search.png" width="300"/> | <img src="docs/history.png" width="300"/> | <img src="docs/volume-preview.png" width="300"/> |
 
 ---
 
 ## ▶️ Demo (how it works)
 
 1. **Play music anywhere** — YouTube in Chrome/Edge, Spotify, VLC, Windows Media Player. The widget pops up at the bottom-right with the title, artist, artwork, and working controls.
-2. **Search YouTube** — click 🔎, type a song, press Enter. Pick a result to play its audio right inside the widget (no browser).
-3. **Play all** — hit **▶ Putar semua** to queue the whole list; it auto-advances track to track.
-4. **History** — open the search box: empty shows recently **played** tracks (click to replay); typing shows matching **past searches** (autocomplete). Switch tabs with **Hasil** / **Riwayat**.
-5. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current track endlessly.
-6. **Delete** — click the small ✕ on any history row to remove it.
+2. **Open local media** — click the file button and choose common audio/video media (`mp3`, `mp4`, `mkv`, `webm`, `flac`, `ogg`, etc.). Video containers are played as audio.
+3. **Search YouTube** — click 🔎, type a song, press Enter. Pick a result to play its audio right inside the widget (no browser).
+4. **Use volume safely** — move the **Vol** slider to adjust the widget-owned player volume without touching the Windows master volume.
+5. **Play all** — hit **▶ Putar semua** to queue the whole list; it auto-advances track to track.
+6. **History** — open the search box: empty shows recently **played** tracks (click to replay); typing shows matching **past searches** (autocomplete). Switch tabs with **Hasil** / **Riwayat**.
+7. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current one endlessly.
+8. **Delete** — click the small ✕ on any history row to remove it.
 
 ---
 
@@ -65,7 +69,7 @@ cd Simple-Music-Widget
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-`install.ps1` builds the app, adds a **Startup** shortcut (auto-run at boot), a **Start Menu** shortcut (right-click → *Pin to taskbar*), and launches it.
+`install.ps1` stops any old running widget first, builds the app, adds a **Startup** shortcut (auto-run at boot), a **Start Menu** shortcut (right-click → *Pin to taskbar*), and launches it.
 
 ### Or just run
 

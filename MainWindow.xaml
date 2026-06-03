@@ -7,7 +7,7 @@
         WindowStyle="None" ResizeMode="NoResize"
         AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False"
-        MouseLeftButtonDown="OnDrag">
+        MouseLeftButtonDown="OnDrag" SizeChanged="OnSizeChanged">
 
     <Window.Resources>
         <Style x:Key="CtrlBtn" TargetType="Button">
@@ -97,7 +97,18 @@
             <!-- Artwork -->
             <Border Grid.Column="0" Width="64" Height="64" CornerRadius="8"
                     Background="#33FFFFFF" ClipToBounds="True" VerticalAlignment="Top">
-                <Image x:Name="Art" Stretch="UniformToFill"/>
+                <Grid>
+                    <Grid.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1DB954" Offset="0"/>
+                            <GradientStop Color="#123D2A" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Grid.Background>
+                    <TextBlock Text="&#x266A;" Foreground="#F5FFF8" Opacity="0.9"
+                               FontFamily="Segoe UI Symbol" FontSize="30"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Image x:Name="Art" Stretch="UniformToFill"/>
+                </Grid>
             </Border>
 
             <!-- Right side -->
@@ -137,6 +148,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <ProgressBar x:Name="Progress" Grid.Row="0" Height="3" Minimum="0" Maximum="1"
@@ -151,6 +163,16 @@
                                 ToolTip="Putar ulang lagu terakhir" Click="OnRepeat"/>
                         <Button x:Name="LoopBtn" Style="{StaticResource CtrlBtn}" Content="&#xE1CD;" FontSize="13"
                                 ToolTip="Loop lagu ini" Click="OnToggleLoop"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <TextBlock Text="Vol" Foreground="#B5B5B5" FontSize="11"
+                                   Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <Slider x:Name="VolumeSlider" Width="96" Minimum="0" Maximum="100" Value="50"
+                                IsMoveToPointEnabled="True" VerticalAlignment="Center"
+                                ToolTip="Geser untuk mengatur volume" ValueChanged="OnVolumeSliderChanged"/>
+                        <TextBlock x:Name="VolumeText" Text="--%" Foreground="#B5B5B5" FontSize="11"
+                                   MinWidth="34" Margin="6,0,0,0" TextAlignment="Right" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -188,13 +210,31 @@
                     <DataTemplate>
                         <Grid>
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="46"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding Display}" Padding="4,3"
-                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Style="{StaticResource IconBtn}" Content="&#xE711;"
-                                    FontSize="10" Visibility="{Binding DeleteVisibility}"
+                            <Border Grid.Column="0" Width="38" Height="28" CornerRadius="6" Margin="4,3,4,3"
+                                    Visibility="{Binding PreviewVisibility}" ClipToBounds="True">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#1DB954" Offset="0"/>
+                                        <GradientStop Color="#244D39" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <TextBlock Text="{Binding PreviewGlyph}" Foreground="#F7FFF9" Opacity="0.9"
+                                           FontFamily="Segoe UI Symbol" FontSize="15"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Display}" Padding="0,2,4,0"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Subtitle}" Visibility="{Binding SubtitleVisibility}"
+                                           Foreground="#9A9A9A" FontSize="10" Padding="0,0,4,2"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Style="{StaticResource IconBtn}" Content="&#xE711;"
+                                    FontSize="10" Visibility="{Binding DeleteVisibility}" Focusable="False"
                                     ToolTip="Hapus dari riwayat" Click="OnDeleteItem"/>
                         </Grid>
                     </DataTemplate>

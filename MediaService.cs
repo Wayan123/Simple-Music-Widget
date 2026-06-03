@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using Windows.Media.Control;
@@ -27,6 +28,7 @@ public sealed class MediaService : IDisposable
 {
     private GSMTCSM? _manager;
     private GSMTCS? _session;
+    private int _publishSequence;
 
     public event Action<MediaSnapshot>? Changed;
 
@@ -62,8 +64,9 @@ public sealed class MediaService : IDisposable
 
     private async Task PublishAsync()
     {
+        var sequence = Interlocked.Increment(ref _publishSequence);
         var snap = await BuildSnapshotAsync();
-        Changed?.Invoke(snap);
+        if (sequence == Volatile.Read(ref _publishSequence)) Changed?.Invoke(snap);
     }
 
     private async Task<MediaSnapshot> BuildSnapshotAsync()

@@ -12,6 +12,10 @@ try {
   winget upgrade --id yt-dlp.yt-dlp -e --accept-source-agreements --accept-package-agreements 2>$null | Out-Null
 } catch { }
 
+Write-Host "Stopping old Music Widget process (if running)..."
+Get-Process MusicWidget -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Milliseconds 500
+
 Write-Host "Building (Release publish)..."
 dotnet publish -c Release -o "$root\publish" | Out-Null
 $exe = Join-Path $root 'publish\MusicWidget.exe'
