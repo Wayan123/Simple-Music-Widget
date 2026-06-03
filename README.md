@@ -19,9 +19,9 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 
 - 🪶 **Lightweight** — ~85 MB working set, single small `.exe`, no heavy frameworks.
 - 🎛️ **Universal control** — prev / play-pause / next + live progress bar for any source.
-- 🔊 **Widget volume slider** — adjust the widget-owned local/YouTube player volume safely.
+- 🔊 **Hideable widget volume slider** — adjust the widget-owned local/YouTube player volume safely, then hide it to keep the overlay minimal.
 - 📁 **Broad local media support** — play common audio/video containers (`mp3`, `mp4`, `mkv`, `webm`, `flac`, `ogg`, and more) by extracting audio when needed.
-- 🔎 **YouTube search & play (audio only)** — no browser needed, with clean music-template previews.
+- 🔎 **YouTube search & play (audio only)** — no browser needed, with clean music-template previews and a hideable results/history list.
 - 🕘 **History** — past searches autocomplete; played tracks are saved and replayable.
 - ▶️ **Play all** — queue an entire result list or your history (auto-advances).
 - 🔁 **Repeat & Loop** — replay the last track, or loop the current one forever.
@@ -33,9 +33,9 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 
 ## 📸 Screenshots
 
-| YouTube search & results | Play history | Volume + template preview |
+| Compact widget | YouTube search & results | Volume + template preview |
 |---|---|---|
-| <img src="docs/search.png" width="300"/> | <img src="docs/history.png" width="300"/> | <img src="docs/volume-preview.png" width="300"/> |
+| <img src="docs/compact-widget.png" width="300"/> | <img src="docs/search.png" width="300"/> | <img src="docs/volume-preview.png" width="300"/> |
 
 ---
 
@@ -44,9 +44,9 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 1. **Play music anywhere** — YouTube in Chrome/Edge, Spotify, VLC, Windows Media Player. The widget pops up at the bottom-right with the title, artist, artwork, and working controls.
 2. **Open local media** — click the file button and choose common audio/video media (`mp3`, `mp4`, `mkv`, `webm`, `flac`, `ogg`, etc.). Video containers are played as audio.
 3. **Search YouTube** — click 🔎, type a song, press Enter. Pick a result to play its audio right inside the widget (no browser).
-4. **Use volume safely** — move the **Vol** slider to adjust the widget-owned player volume without touching the Windows master volume.
+4. **Use volume safely** — click the volume icon only when needed, move the **Vol** slider, then hide it again for a compact widget.
 5. **Play all** — hit **▶ Putar semua** to queue the whole list; it auto-advances track to track.
-6. **History** — open the search box: empty shows recently **played** tracks (click to replay); typing shows matching **past searches** (autocomplete). Switch tabs with **Hasil** / **Riwayat**.
+6. **History** — open the search box: empty can show recently **played** tracks; use **Daftar** to show/hide the list, and switch tabs with **Hasil** / **Riwayat**.
 7. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current one endlessly.
 8. **Delete** — click the small ✕ on any history row to remove it.
 

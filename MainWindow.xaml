@@ -163,9 +163,12 @@
                                 ToolTip="Putar ulang lagu terakhir" Click="OnRepeat"/>
                         <Button x:Name="LoopBtn" Style="{StaticResource CtrlBtn}" Content="&#xE1CD;" FontSize="13"
                                 ToolTip="Loop lagu ini" Click="OnToggleLoop"/>
+                        <Button x:Name="VolumeToggleBtn" Style="{StaticResource CtrlBtn}" Content="&#xE995;" FontSize="13"
+                                ToolTip="Tampilkan/sembunyikan volume" Click="OnToggleVolume"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                    <StackPanel x:Name="VolumePanel" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center"
+                                Margin="0,2,0,0" Visibility="Collapsed">
                         <TextBlock Text="Vol" Foreground="#B5B5B5" FontSize="11"
                                    Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <Slider x:Name="VolumeSlider" Width="96" Minimum="0" Maximum="100" Value="50"
@@ -184,9 +187,10 @@
                      BorderBrush="#444" BorderThickness="1" Padding="6,4" FontSize="12"
                      KeyDown="OnSearchKey" TextChanged="OnSearchTextChanged"/>
 
-            <!-- Tabs + play-all -->
+            <!-- Compact list controls -->
             <Grid Margin="0,6,0,0">
                 <StackPanel Orientation="Horizontal">
+                    <Button x:Name="ResultsToggleBtn" Style="{StaticResource TextBtn}" Content="Daftar" Click="OnToggleResults"/>
                     <Button x:Name="TabResults" Style="{StaticResource TextBtn}" Content="Hasil" Click="OnTabResults"/>
                     <Button x:Name="TabPlayed" Style="{StaticResource TextBtn}" Content="Riwayat" Click="OnTabPlayed"/>
                 </StackPanel>
@@ -195,7 +199,7 @@
                         ToolTip="Putar semua dari daftar" Click="OnPlayAll"/>
             </Grid>
 
-            <ListBox x:Name="Results" Background="Transparent" BorderThickness="0"
+            <ListBox x:Name="Results" Visibility="Collapsed" Background="Transparent" BorderThickness="0"
                      Foreground="#E5E5E5" MaxHeight="180" Margin="0,4,0,0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      SelectionChanged="OnResultPick">

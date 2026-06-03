@@ -212,6 +212,8 @@ public partial class MainWindow : Window
             if (SearchPanel.Visibility != Visibility.Visible)
             {
                 SearchPanel.Visibility = Visibility.Visible;
+                Results.Visibility = Visibility.Collapsed;
+                UpdateResultsToggleText();
                 SearchBox.Focus();
                 ShowSuggestions(SearchBox.Text);
             }
@@ -292,7 +294,13 @@ public partial class MainWindow : Window
         }
         bool show = SearchPanel.Visibility != Visibility.Visible;
         SearchPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        if (show) { SearchBox.Focus(); ShowSuggestions(SearchBox.Text); }
+        if (show)
+        {
+            Results.Visibility = Visibility.Collapsed;
+            UpdateResultsToggleText();
+            SearchBox.Focus();
+            ShowSuggestions(SearchBox.Text);
+        }
     }
 
     private void OnSearchKey(object sender, KeyEventArgs e)
@@ -336,6 +344,8 @@ public partial class MainWindow : Window
         {
             var hits = await YouTubeService.SearchAsync(q);
             if (generation != _searchGeneration) return;
+            Results.Visibility = Visibility.Visible;
+            UpdateResultsToggleText();
             Results.Items.Clear();
             if (hits.Count == 0) { Results.Items.Add(new PlayerItem { Display = "Tidak ada hasil" }); return; }
             foreach (var h in hits)
@@ -344,6 +354,8 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             if (generation != _searchGeneration) return;
+            Results.Visibility = Visibility.Visible;
+            UpdateResultsToggleText();
             Results.Items.Clear();
             Results.Items.Add(new PlayerItem { Display = "Gagal mencari YouTube", Subtitle = ex.Message });
             ArtistText.Text = ex.Message;
@@ -353,12 +365,16 @@ public partial class MainWindow : Window
     private void OnTabResults(object sender, RoutedEventArgs e)
     {
         _searchGeneration++;
+        Results.Visibility = Visibility.Visible;
+        UpdateResultsToggleText();
         ShowSuggestions(SearchBox.Text);
     }
 
     private void OnTabPlayed(object sender, RoutedEventArgs e)
     {
         _searchGeneration++;
+        Results.Visibility = Visibility.Visible;
+        UpdateResultsToggleText();
         Results.Items.Clear();
         foreach (var t in HistoryStore.Played)
             Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true, Subtitle = "YouTube • template musik" });
@@ -476,6 +492,28 @@ public partial class MainWindow : Window
         LoopBtn.Foreground = _local.Loop
             ? System.Windows.Media.Brushes.LightGreen
             : System.Windows.Media.Brushes.White;
+    }
+
+    private void OnToggleResults(object sender, RoutedEventArgs e)
+    {
+        Results.Visibility = Results.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        if (Results.Visibility == Visibility.Visible && Results.Items.Count == 0) ShowSuggestions(SearchBox.Text);
+        UpdateResultsToggleText();
+    }
+
+    private void UpdateResultsToggleText()
+    {
+        if (ResultsToggleBtn is null) return;
+        ResultsToggleBtn.Content = Results.Visibility == Visibility.Visible ? "Sembunyi" : "Daftar";
+    }
+
+    private void OnToggleVolume(object sender, RoutedEventArgs e)
+    {
+        VolumePanel.Visibility = VolumePanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        VolumeToggleBtn.Foreground = VolumePanel.Visibility == Visibility.Visible
+            ? System.Windows.Media.Brushes.LightGreen
+            : System.Windows.Media.Brushes.White;
+        if (VolumePanel.Visibility == Visibility.Visible) UpdateVolumeDisplay();
     }
 
     private void OnVolumeSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
