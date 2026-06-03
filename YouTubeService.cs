@@ -132,11 +132,11 @@ public static class YouTubeService
         using var proc = new Process { StartInfo = psi };
         try
         {
-            if (!proc.Start()) throw new InvalidOperationException("yt-dlp gagal dijalankan");
+            if (!proc.Start()) throw new InvalidOperationException("yt-dlp failed to start");
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException("yt-dlp tidak ditemukan atau gagal dijalankan", ex);
+            throw new InvalidOperationException("yt-dlp was not found or failed to start", ex);
         }
 
         var stdoutTask = proc.StandardOutput.ReadToEndAsync();
@@ -146,14 +146,14 @@ public static class YouTubeService
         if (finished != waitTask)
         {
             try { proc.Kill(true); } catch { }
-            throw new TimeoutException("yt-dlp terlalu lama merespons");
+            throw new TimeoutException("yt-dlp took too long to respond");
         }
 
         await waitTask;
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
         if (proc.ExitCode != 0)
-            throw new InvalidOperationException(CleanProcessError(stderr, "yt-dlp gagal memproses permintaan"));
+            throw new InvalidOperationException(CleanProcessError(stderr, "yt-dlp failed to process the request"));
 
         return stdout.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
                      .Where(l => !string.IsNullOrWhiteSpace(l))

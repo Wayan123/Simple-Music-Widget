@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,6 +10,8 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 
 namespace MusicWidget;
+
+public enum UiLanguage { En, Id }
 
 /// <summary>A row in the list: a YouTube result, a played-history track, or a search suggestion.</summary>
 public sealed class PlayerItem
@@ -44,11 +47,14 @@ public partial class MainWindow : Window
     private int _searchGeneration;  // ignores stale YouTube search completions
     private bool _updatingVolumeUi; // prevents slider sync from setting volume recursively
     private double _widgetVolume = 1.0; // persisted slider value for the widget-owned player
+    private UiLanguage _language = LoadLanguage();
+    private bool IsIndonesian => _language == UiLanguage.Id;
     private bool _userMoved;        // user dragged the window; keep their position, just don't clip
 
     public MainWindow()
     {
         InitializeComponent();
+        ApplyLanguage();
         // Boot auto-start (from Startup shortcut) stays hidden until music; manual launch shows now.
         _autoStart = Environment.GetCommandLineArgs().Any(a =>
             a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
@@ -79,7 +85,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            TitleText.Text = "SMTC tidak tersedia";
+            TitleText.Text = Text("SMTC unavailable", "SMTC tidak tersedia");
             ArtistText.Text = ex.Message;
         }
         UpdateVolumeDisplay();
@@ -103,11 +109,70 @@ public partial class MainWindow : Window
         catch { }
     }
 
+    private static readonly string SettingsDir =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MusicWidget");
+    private static readonly string LanguageFile = Path.Combine(SettingsDir, "language.txt");
+
+    private static UiLanguage LoadLanguage()
+    {
+        try
+        {
+            var value = File.Exists(LanguageFile) ? File.ReadAllText(LanguageFile).Trim() : "en";
+            return value.Equals("id", StringComparison.OrdinalIgnoreCase) ? UiLanguage.Id : UiLanguage.En;
+        }
+        catch { return UiLanguage.En; }
+    }
+
+    private void SaveLanguage()
+    {
+        try
+        {
+            Directory.CreateDirectory(SettingsDir);
+            File.WriteAllText(LanguageFile, IsIndonesian ? "id" : "en");
+        }
+        catch { }
+    }
+
+    private string Text(string en, string id) => IsIndonesian ? id : en;
+
+    private void ApplyLanguage()
+    {
+        if (LangBtn is null) return;
+
+        LangBtn.Content = IsIndonesian ? "EN" : "ID";
+        LangBtn.ToolTip = IsIndonesian ? "Switch to English" : "Ganti ke Bahasa Indonesia";
+        SearchBtn.ToolTip = Text("Search YouTube", "Cari YouTube");
+        OpenBtn.ToolTip = Text("Open local media file", "Buka file media lokal");
+        CloseBtn.ToolTip = Text("Close", "Tutup");
+        RepeatBtn.ToolTip = Text("Repeat last track", "Putar ulang lagu terakhir");
+        LoopBtn.ToolTip = Text("Loop this track", "Loop lagu ini");
+        VolumeToggleBtn.ToolTip = Text("Show/hide volume", "Tampilkan/sembunyikan volume");
+        VolumeSlider.ToolTip = Text("Drag to adjust volume", "Geser untuk mengatur volume");
+        VolumeLabel.Text = Text("Vol", "Vol");
+        TabResults.Content = Text("Results", "Hasil");
+        TabPlayed.Content = Text("History", "Riwayat");
+        PlayAllBtn.Content = Text("\u25B6 Play all", "\u25B6 Putar semua");
+        PlayAllBtn.ToolTip = Text("Play all from the list", "Putar semua dari daftar");
+        UpdateResultsToggleText();
+    }
+
+    private void OnToggleLanguage(object sender, RoutedEventArgs e)
+    {
+        _language = IsIndonesian ? UiLanguage.En : UiLanguage.Id;
+        SaveLanguage();
+        ApplyLanguage();
+
+        // Refresh lightweight suggestion/history labels after language changes.
+        if (SearchPanel.Visibility == Visibility.Visible && Results.Items.Count > 0)
+            ShowSuggestions(SearchBox.Text);
+    }
+
     private async System.Threading.Tasks.Task CheckUpdatesAsync()
     {
         var tag = await UpdateService.CheckAsync();
         if (tag is not null)
-            _tray?.Notify("Music Widget", $"Versi baru {tag} tersedia. Klik untuk update.",
+            _tray?.Notify("Music Widget", Text($"New version {tag} is available. Click to update.",
+                                             $"Versi baru {tag} tersedia. Klik untuk update."),
                           UpdateService.OpenReleasesPage);
     }
 
@@ -125,7 +190,7 @@ public partial class MainWindow : Window
 
     private void HandleOwnedPlaybackFailure(string message)
     {
-        TitleText.Text = "Gagal memutar media";
+        TitleText.Text = Text("Playback failed", "Gagal memutar media");
         ArtistText.Text = message;
         PlayBtn.Content = "\uE768";
         if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) PlayNextInQueue();
@@ -137,9 +202,9 @@ public partial class MainWindow : Window
         // Auto-hide when nothing is playing (unless searching or our own queue is active).
         if (!s.HasSession)
         {
-            TitleText.Text = "Tidak ada yang diputar";
+            TitleText.Text = Text("No media playing", "Tidak ada yang diputar");
             ArtistText.Text = "";
-            Source.Text = "Music";
+            Source.Text = Text("Music", "Musik");
             Art.Source = null;
             Progress.Value = 0;
             PlayBtn.Content = "\uE768"; // play glyph
@@ -150,7 +215,7 @@ public partial class MainWindow : Window
         if (!IsVisible) { _userMoved = false; Show(); }
         TitleText.Text = s.Title;
         ArtistText.Text = s.Artist;
-        Source.Text = string.IsNullOrWhiteSpace(s.SourceApp) ? "Music" : s.SourceApp;
+        Source.Text = string.IsNullOrWhiteSpace(s.SourceApp) ? Text("Music", "Musik") : s.SourceApp;
         Art.Source = s.Thumbnail;
         PlayBtn.Content = s.IsPlaying ? "\uE769" : "\uE768"; // pause : play
 
@@ -232,7 +297,7 @@ public partial class MainWindow : Window
     {
         var dlg = new OpenFileDialog
         {
-            Title = "Pilih file musik/video lokal",
+            Title = Text("Choose local music/video file", "Pilih file musik/video lokal"),
             Filter = LocalPlayer.OpenDialogFilter
         };
         if (dlg.ShowDialog() != true) return;
@@ -242,13 +307,13 @@ public partial class MainWindow : Window
         _ownedPlaybackActive = true;
         _durationSec = 0;
         Art.Source = null;
-        TitleText.Text = "Memuat file lokal...";
+        TitleText.Text = Text("Loading local file...", "Memuat file lokal...");
         ArtistText.Text = System.IO.Path.GetFileName(dlg.FileName);
-        Source.Text = "File lokal";
+        Source.Text = Text("Local file", "File lokal");
         try
         {
             var pl = EnsurePlayer();
-            if (pl is null) { HandleOwnedPlaybackFailure("Pemutar tidak tersedia"); return; }
+            if (pl is null) { HandleOwnedPlaybackFailure(Text("Player unavailable", "Pemutar tidak tersedia")); return; }
             await pl.PlayFileAsync(dlg.FileName);
             if (generation != _playGeneration) return;
         }
@@ -325,11 +390,11 @@ public partial class MainWindow : Window
         {
             // Empty box: surface recently played so they can be replayed.
             foreach (var t in HistoryStore.Played)
-                Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true, Subtitle = "YouTube • template musik" });
+                Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true, Subtitle = Text("YouTube • music template", "YouTube • template musik") });
             return;
         }
         foreach (var q in HistoryStore.MatchSearches(prefix))
-            Results.Items.Add(new PlayerItem { Display = "\uE721 " + q, Query = q, Deletable = true, Subtitle = "Pencarian tersimpan" });
+            Results.Items.Add(new PlayerItem { Display = "\uE721 " + q, Query = q, Deletable = true, Subtitle = Text("Saved search", "Pencarian tersimpan") });
     }
 
     private async void DoSearch()
@@ -339,7 +404,7 @@ public partial class MainWindow : Window
         var generation = ++_searchGeneration;
         HistoryStore.AddSearch(q);
         Results.Items.Clear();
-        Results.Items.Add(new PlayerItem { Display = "Mencari...", Deletable = false });
+        Results.Items.Add(new PlayerItem { Display = Text("Searching...", "Mencari..."), Deletable = false });
         try
         {
             var hits = await YouTubeService.SearchAsync(q);
@@ -347,9 +412,9 @@ public partial class MainWindow : Window
             Results.Visibility = Visibility.Visible;
             UpdateResultsToggleText();
             Results.Items.Clear();
-            if (hits.Count == 0) { Results.Items.Add(new PlayerItem { Display = "Tidak ada hasil" }); return; }
+            if (hits.Count == 0) { Results.Items.Add(new PlayerItem { Display = Text("No results", "Tidak ada hasil") }); return; }
             foreach (var h in hits)
-                Results.Items.Add(new PlayerItem { Display = h.Title, Track = h, Deletable = false, Subtitle = "YouTube • preview template musik" });
+                Results.Items.Add(new PlayerItem { Display = h.Title, Track = h, Deletable = false, Subtitle = Text("YouTube • music template preview", "YouTube • preview template musik") });
         }
         catch (Exception ex)
         {
@@ -357,7 +422,7 @@ public partial class MainWindow : Window
             Results.Visibility = Visibility.Visible;
             UpdateResultsToggleText();
             Results.Items.Clear();
-            Results.Items.Add(new PlayerItem { Display = "Gagal mencari YouTube", Subtitle = ex.Message });
+            Results.Items.Add(new PlayerItem { Display = Text("YouTube search failed", "Gagal mencari YouTube"), Subtitle = ex.Message });
             ArtistText.Text = ex.Message;
         }
     }
@@ -377,7 +442,7 @@ public partial class MainWindow : Window
         UpdateResultsToggleText();
         Results.Items.Clear();
         foreach (var t in HistoryStore.Played)
-            Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true, Subtitle = "YouTube • template musik" });
+            Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true, Subtitle = Text("YouTube • music template", "YouTube • template musik") });
     }
 
     // Pick a row: play a track, or run a stored search query.
@@ -442,16 +507,16 @@ public partial class MainWindow : Window
         _durationSec = 0;            // reset so progress bar starts fresh for the new track
         Art.Source = null;           // show the built-in music template instead of stale art
         HistoryStore.AddPlayed(r);
-        TitleText.Text = "Memuat..."; ArtistText.Text = r.Title; Source.Text = "YouTube";
+        TitleText.Text = Text("Loading...", "Memuat..."); ArtistText.Text = r.Title; Source.Text = "YouTube";
         try
         {
             var url = await YouTubeService.GetAudioUrlAsync(r.Id);
             if (generation != _playGeneration) return;
-            if (url is null) { HandleTrackLoadFailure("URL audio kosong"); return; }
+            if (url is null) { HandleTrackLoadFailure(Text("Empty audio URL", "URL audio kosong")); return; }
 
             TitleText.Text = "Buffering...";
             var pl = EnsurePlayer();
-            if (pl is null) { HandleTrackLoadFailure("Pemutar tidak tersedia"); return; }
+            if (pl is null) { HandleTrackLoadFailure(Text("Player unavailable", "Pemutar tidak tersedia")); return; }
             await pl.PlayStreamAsync(url, r.Title, "YouTube");
             if (generation != _playGeneration) return;
         }
@@ -463,7 +528,7 @@ public partial class MainWindow : Window
 
     private void HandleTrackLoadFailure(string message)
     {
-        TitleText.Text = "Gagal memuat";
+        TitleText.Text = Text("Load failed", "Gagal memuat");
         ArtistText.Text = message;
         if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) PlayNextInQueue();
         else { _queueActive = false; _ownedPlaybackActive = false; }
@@ -504,7 +569,9 @@ public partial class MainWindow : Window
     private void UpdateResultsToggleText()
     {
         if (ResultsToggleBtn is null) return;
-        ResultsToggleBtn.Content = Results.Visibility == Visibility.Visible ? "Sembunyi" : "Daftar";
+        ResultsToggleBtn.Content = Results.Visibility == Visibility.Visible
+            ? Text("Hide", "Sembunyi")
+            : Text("List", "Daftar");
     }
 
     private void OnToggleVolume(object sender, RoutedEventArgs e)

@@ -73,7 +73,7 @@ public sealed class MediaService : IDisposable
     {
         var s = _session;
         if (s is null)
-            return new MediaSnapshot("Tidak ada yang diputar", "", "", false, false, null,
+            return new MediaSnapshot("No media playing", "", "", false, false, null,
                                      TimeSpan.Zero, TimeSpan.Zero);
 
         string title = "", artist = "", source = "";
@@ -108,7 +108,7 @@ public sealed class MediaService : IDisposable
         try { source = FriendlyName(s.SourceAppUserModelId); } catch { }
 
         return new MediaSnapshot(
-            string.IsNullOrWhiteSpace(title) ? "Tidak ada judul" : title,
+            string.IsNullOrWhiteSpace(title) ? "No title" : title,
             artist, source, playing, true, art, pos, dur);
     }
 

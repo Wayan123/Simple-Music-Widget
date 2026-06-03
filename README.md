@@ -18,6 +18,7 @@ One widget controls *everything* — YouTube & Spotify in your browser, VLC, Win
 Most "now playing" widgets only work with one app. This one reads Windows **System Media Transport Controls (SMTC)** — the same layer the OS uses for its taskbar media flyout — so it shows and controls **whatever you're playing**, from any app, with a single tiny window. It also adds its own **built-in YouTube audio player** (search & play without opening a browser).
 
 - 🪶 **Lightweight** — ~85 MB working set, single small `.exe`, no heavy frameworks.
+- 🌐 **Bilingual UI** — English by default with a compact `ID/EN` toggle saved between sessions.
 - 🎛️ **Universal control** — prev / play-pause / next + live progress bar for any source.
 - 🔊 **Hideable widget volume slider** — adjust the widget-owned local/YouTube player volume safely, then hide it to keep the overlay minimal.
 - 📁 **Broad local media support** — play common audio/video containers (`mp3`, `mp4`, `mkv`, `webm`, `flac`, `ogg`, and more) by extracting audio when needed.
@@ -48,7 +49,8 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 5. **Play all** — hit **▶ Putar semua** to queue the whole list; it auto-advances track to track.
 6. **History** — open the search box: empty can show recently **played** tracks; use **Daftar** to show/hide the list, and switch tabs with **Hasil** / **Riwayat**.
 7. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current one endlessly.
-8. **Delete** — click the small ✕ on any history row to remove it.
+8. **Switch language** — click the tiny `ID/EN` button to switch between English and Indonesian.
+9. **Delete** — click the small ✕ on any history row to remove it.
 
 ---
 

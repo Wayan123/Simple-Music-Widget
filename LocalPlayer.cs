@@ -91,7 +91,7 @@ public sealed class LocalPlayer : IDisposable
 
     private void OnMediaFailed(object? sender, ExceptionEventArgs e)
     {
-        var message = e.ErrorException?.Message ?? "Format media tidak bisa diputar";
+        var message = e.ErrorException?.Message ?? "Media format cannot be played";
         StopCurrentSource();
         _smtc.PlaybackStatus = MediaPlaybackStatus.Stopped;
         Failed?.Invoke(message);
@@ -99,32 +99,32 @@ public sealed class LocalPlayer : IDisposable
 
     public async Task PlayFileAsync(string path)
     {
-        if (!File.Exists(path)) throw new FileNotFoundException("File tidak ditemukan", path);
+        if (!File.Exists(path)) throw new FileNotFoundException("File not found", path);
 
         var title = Path.GetFileNameWithoutExtension(path);
         var ext = Path.GetExtension(path).ToLowerInvariant();
         if (DirectExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase))
         {
-            Play(path, title, "File lokal");
+            Play(path, title, "Local file");
             return;
         }
 
         // For FLAC/OGG/OPUS and video containers, ffmpeg extracts/transcodes audio.
         try
         {
-            await PlayViaFfmpegAsync(path, title, "File lokal", isRemote: false);
+            await PlayViaFfmpegAsync(path, title, "Local file", isRemote: false);
         }
         catch when (SupportedExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase))
         {
             // Last-resort native attempt: useful if ffmpeg is unavailable but Windows has codecs.
-            Play(path, title, "File lokal");
+            Play(path, title, "Local file");
         }
     }
 
     public void Play(string path, string? title = null, string? artist = null)
     {
         StartNewSource();
-        OpenMedia(path, title ?? Path.GetFileNameWithoutExtension(path), artist ?? "File lokal");
+        OpenMedia(path, title ?? Path.GetFileNameWithoutExtension(path), artist ?? "Local file");
     }
 
     /// <summary>
@@ -189,12 +189,12 @@ public sealed class LocalPlayer : IDisposable
         var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
         try
         {
-            if (!proc.Start()) throw new InvalidOperationException("ffmpeg gagal dijalankan");
+            if (!proc.Start()) throw new InvalidOperationException("ffmpeg failed to start");
         }
         catch (Exception ex)
         {
             proc.Dispose();
-            throw new InvalidOperationException("ffmpeg tidak tersedia untuk format ini", ex);
+            throw new InvalidOperationException("ffmpeg is unavailable for this format", ex);
         }
 
         _ffmpeg = proc;
@@ -231,7 +231,7 @@ public sealed class LocalPlayer : IDisposable
 
         CleanupFfmpegProcess(proc, temp, generation);
         if (!IsCurrentSource(generation)) return;
-        throw new TimeoutException("Buffer ffmpeg terlalu lama; coba file lain atau perbarui ffmpeg");
+        throw new TimeoutException("ffmpeg buffering took too long; try another file or update ffmpeg");
     }
 
     private void OpenMedia(string path, string title, string artist)
@@ -250,9 +250,9 @@ public sealed class LocalPlayer : IDisposable
 
     private static string CleanFfmpegError(string stderr)
     {
-        if (string.IsNullOrWhiteSpace(stderr)) return "ffmpeg gagal membaca audio dari media ini";
+        if (string.IsNullOrWhiteSpace(stderr)) return "ffmpeg could not read audio from this media";
         var lines = stderr.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-        return lines.Length == 0 ? "ffmpeg gagal membaca audio dari media ini" : lines[^1];
+        return lines.Length == 0 ? "ffmpeg could not read audio from this media" : lines[^1];
     }
 
     private int StartNewSource()

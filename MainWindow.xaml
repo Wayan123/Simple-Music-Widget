@@ -124,18 +124,20 @@
                     <TextBlock x:Name="Source" Text="Music" Foreground="#9A9A9A" FontSize="11"
                                VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="LangBtn" Style="{StaticResource TextBtn}" Content="ID"
+                                ToolTip="Switch language" Click="OnToggleLanguage"/>
                         <Button x:Name="SearchBtn" Style="{StaticResource IconBtn}" Content="&#xE721;"
-                                ToolTip="Cari lagu di YouTube" Click="OnToggleSearch"/>
+                                ToolTip="Search YouTube" Click="OnToggleSearch"/>
                         <Button x:Name="OpenBtn" Style="{StaticResource IconBtn}" Content="&#xE8E5;"
-                                ToolTip="Buka file lagu lokal" Click="OnOpenFile"/>
+                                ToolTip="Open local media file" Click="OnOpenFile"/>
                         <Button x:Name="CloseBtn" Style="{StaticResource IconBtn}" Content="&#xE711;"
-                                ToolTip="Tutup" Click="OnClose"/>
+                                ToolTip="Close" Click="OnClose"/>
                     </StackPanel>
                 </Grid>
 
                 <!-- Title + artist -->
                 <StackPanel Grid.Row="1">
-                    <TextBlock x:Name="TitleText" Text="Tidak ada yang diputar"
+                    <TextBlock x:Name="TitleText" Text="No media playing"
                                Foreground="#F5F5F5" FontSize="14" FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis"/>
                     <TextBlock x:Name="ArtistText" Text=""
@@ -160,20 +162,20 @@
                         <Button x:Name="PlayBtn" Style="{StaticResource CtrlBtn}" Content="&#xE768;" Click="OnPlayPause" FontSize="16"/>
                         <Button x:Name="NextBtn" Style="{StaticResource CtrlBtn}" Content="&#xE101;" Click="OnNext"/>
                         <Button x:Name="RepeatBtn" Style="{StaticResource CtrlBtn}" Content="&#xE72C;" FontSize="13"
-                                ToolTip="Putar ulang lagu terakhir" Click="OnRepeat"/>
+                                ToolTip="Repeat last track" Click="OnRepeat"/>
                         <Button x:Name="LoopBtn" Style="{StaticResource CtrlBtn}" Content="&#xE1CD;" FontSize="13"
-                                ToolTip="Loop lagu ini" Click="OnToggleLoop"/>
+                                ToolTip="Loop this track" Click="OnToggleLoop"/>
                         <Button x:Name="VolumeToggleBtn" Style="{StaticResource CtrlBtn}" Content="&#xE995;" FontSize="13"
-                                ToolTip="Tampilkan/sembunyikan volume" Click="OnToggleVolume"/>
+                                ToolTip="Show/hide volume" Click="OnToggleVolume"/>
                     </StackPanel>
 
                     <StackPanel x:Name="VolumePanel" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center"
                                 Margin="0,2,0,0" Visibility="Collapsed">
-                        <TextBlock Text="Vol" Foreground="#B5B5B5" FontSize="11"
+                        <TextBlock x:Name="VolumeLabel" Text="Vol" Foreground="#B5B5B5" FontSize="11"
                                    Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <Slider x:Name="VolumeSlider" Width="96" Minimum="0" Maximum="100" Value="50"
                                 IsMoveToPointEnabled="True" VerticalAlignment="Center"
-                                ToolTip="Geser untuk mengatur volume" ValueChanged="OnVolumeSliderChanged"/>
+                                ToolTip="Drag to adjust volume" ValueChanged="OnVolumeSliderChanged"/>
                         <TextBlock x:Name="VolumeText" Text="--%" Foreground="#B5B5B5" FontSize="11"
                                    MinWidth="34" Margin="6,0,0,0" TextAlignment="Right" VerticalAlignment="Center"/>
                     </StackPanel>
@@ -190,13 +192,13 @@
             <!-- Compact list controls -->
             <Grid Margin="0,6,0,0">
                 <StackPanel Orientation="Horizontal">
-                    <Button x:Name="ResultsToggleBtn" Style="{StaticResource TextBtn}" Content="Daftar" Click="OnToggleResults"/>
-                    <Button x:Name="TabResults" Style="{StaticResource TextBtn}" Content="Hasil" Click="OnTabResults"/>
-                    <Button x:Name="TabPlayed" Style="{StaticResource TextBtn}" Content="Riwayat" Click="OnTabPlayed"/>
+                    <Button x:Name="ResultsToggleBtn" Style="{StaticResource TextBtn}" Content="List" Click="OnToggleResults"/>
+                    <Button x:Name="TabResults" Style="{StaticResource TextBtn}" Content="Results" Click="OnTabResults"/>
+                    <Button x:Name="TabPlayed" Style="{StaticResource TextBtn}" Content="History" Click="OnTabPlayed"/>
                 </StackPanel>
                 <Button x:Name="PlayAllBtn" Style="{StaticResource TextBtn}" HorizontalAlignment="Right"
-                        Content="&#x25B6; Putar semua" FontFamily="Segoe UI"
-                        ToolTip="Putar semua dari daftar" Click="OnPlayAll"/>
+                        Content="&#x25B6; Play all" FontFamily="Segoe UI"
+                        ToolTip="Play all from the list" Click="OnPlayAll"/>
             </Grid>
 
             <ListBox x:Name="Results" Visibility="Collapsed" Background="Transparent" BorderThickness="0"
