@@ -6,6 +6,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
@@ -49,6 +51,8 @@ public partial class MainWindow : Window
     private double _widgetVolume = 1.0; // persisted slider value for the widget-owned player
     private UiLanguage _language = LoadLanguage();
     private bool IsIndonesian => _language == UiLanguage.Id;
+    private string? _titleMarqueeKey;
+    private string? _artistMarqueeKey;
     private bool _userMoved;        // user dragged the window; keep their position, just don't clip
 
     public MainWindow()
@@ -61,6 +65,8 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         Closed += (_, _) => { _timer.Stop(); _media.Dispose(); _local?.Dispose(); _tray?.Dispose(); };
         _timer.Tick += OnTick;
+        TitleViewport.SizeChanged += (_, _) => QueueMarqueeUpdate();
+        ArtistViewport.SizeChanged += (_, _) => QueueMarqueeUpdate();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -154,6 +160,7 @@ public partial class MainWindow : Window
         PlayAllBtn.Content = Text("\u25B6 Play all", "\u25B6 Putar semua");
         PlayAllBtn.ToolTip = Text("Play all from the list", "Putar semua dari daftar");
         UpdateResultsToggleText();
+        QueueMarqueeUpdate();
     }
 
     private void OnToggleLanguage(object sender, RoutedEventArgs e)
@@ -192,6 +199,7 @@ public partial class MainWindow : Window
     {
         TitleText.Text = Text("Playback failed", "Gagal memutar media");
         ArtistText.Text = message;
+        QueueMarqueeUpdate();
         PlayBtn.Content = "\uE768";
         if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) PlayNextInQueue();
         else { _queueActive = false; _ownedPlaybackActive = false; }
@@ -208,6 +216,7 @@ public partial class MainWindow : Window
             Art.Source = null;
             Progress.Value = 0;
             PlayBtn.Content = "\uE768"; // play glyph
+            QueueMarqueeUpdate();
             if (SearchPanel.Visibility != Visibility.Visible && !_queueActive && !_ownedPlaybackActive && IsVisible) Hide();
             return;
         }
@@ -218,6 +227,7 @@ public partial class MainWindow : Window
         Source.Text = string.IsNullOrWhiteSpace(s.SourceApp) ? Text("Music", "Musik") : s.SourceApp;
         Art.Source = s.Thumbnail;
         PlayBtn.Content = s.IsPlaying ? "\uE769" : "\uE768"; // pause : play
+        QueueMarqueeUpdate();
 
         _durationSec = s.Duration.TotalSeconds;
         UpdateProgress(s.Position.TotalSeconds);
@@ -226,6 +236,60 @@ public partial class MainWindow : Window
     private void UpdateProgress(double posSec)
     {
         Progress.Value = _durationSec > 0 ? Math.Clamp(posSec / _durationSec, 0, 1) : 0;
+    }
+
+    private void QueueMarqueeUpdate()
+    {
+        _ = Dispatcher.BeginInvoke(new Action(UpdateMarquees), DispatcherPriority.Loaded);
+    }
+
+    private void UpdateMarquees()
+    {
+        UpdateMarquee(TitleViewport, TitleText, TitleTransform, ref _titleMarqueeKey, speedPixelsPerSecond: 26);
+        UpdateMarquee(ArtistViewport, ArtistText, ArtistTransform, ref _artistMarqueeKey, speedPixelsPerSecond: 22);
+    }
+
+    private static void UpdateMarquee(Border viewport, TextBlock text, TranslateTransform transform,
+                                      ref string? previousKey, double speedPixelsPerSecond)
+    {
+        if (viewport.ActualWidth <= 0 || string.IsNullOrWhiteSpace(text.Text))
+        {
+            StopMarquee(transform, ref previousKey);
+            return;
+        }
+
+        text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var textWidth = text.DesiredSize.Width;
+        var viewportWidth = viewport.ActualWidth;
+        var key = $"{text.Text}|{viewportWidth:0.0}|{textWidth:0.0}";
+        if (key == previousKey) return;
+        previousKey = key;
+
+        transform.BeginAnimation(TranslateTransform.XProperty, null);
+        transform.X = 0;
+
+        var overflow = textWidth - viewportWidth;
+        if (overflow <= 4) return;
+
+        var travel = overflow + 36; // small pause/gap before the loop resets.
+        var seconds = Math.Clamp(travel / speedPixelsPerSecond, 6, 24);
+        var animation = new DoubleAnimation
+        {
+            From = 0,
+            To = -travel,
+            Duration = TimeSpan.FromSeconds(seconds),
+            BeginTime = TimeSpan.FromSeconds(1.2),
+            RepeatBehavior = RepeatBehavior.Forever,
+            FillBehavior = FillBehavior.Stop
+        };
+        transform.BeginAnimation(TranslateTransform.XProperty, animation);
+    }
+
+    private static void StopMarquee(TranslateTransform transform, ref string? previousKey)
+    {
+        previousKey = null;
+        transform.BeginAnimation(TranslateTransform.XProperty, null);
+        transform.X = 0;
     }
 
     // Lightweight 500ms poll keeps the progress bar moving between SMTC events.
@@ -310,6 +374,7 @@ public partial class MainWindow : Window
         TitleText.Text = Text("Loading local file...", "Memuat file lokal...");
         ArtistText.Text = System.IO.Path.GetFileName(dlg.FileName);
         Source.Text = Text("Local file", "File lokal");
+        QueueMarqueeUpdate();
         try
         {
             var pl = EnsurePlayer();
@@ -508,6 +573,7 @@ public partial class MainWindow : Window
         Art.Source = null;           // show the built-in music template instead of stale art
         HistoryStore.AddPlayed(r);
         TitleText.Text = Text("Loading...", "Memuat..."); ArtistText.Text = r.Title; Source.Text = "YouTube";
+        QueueMarqueeUpdate();
         try
         {
             var url = await YouTubeService.GetAudioUrlAsync(r.Id);
@@ -530,6 +596,7 @@ public partial class MainWindow : Window
     {
         TitleText.Text = Text("Load failed", "Gagal memuat");
         ArtistText.Text = message;
+        QueueMarqueeUpdate();
         if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) PlayNextInQueue();
         else { _queueActive = false; _ownedPlaybackActive = false; }
     }
