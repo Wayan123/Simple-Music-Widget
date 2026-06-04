@@ -63,7 +63,15 @@ winget install Microsoft.DotNet.SDK.8        # to build
 winget install yt-dlp.yt-dlp Gyan.FFmpeg     # for YouTube audio
 ```
 
-### One-click setup
+### Recommended: Windows installer `.exe`
+
+Download `MusicWidgetSetup-*-win-x64.exe` from [**Releases**](https://github.com/Wayan123/Simple-Music-Widget/releases/latest), run it, then launch **Music Widget** from the Start Menu.
+
+Release installers are self-contained for Windows x64, so users do not need to install the .NET Desktop Runtime separately. The installer is per-user (no admin required), adds a Start Menu shortcut, supports uninstall from Windows Settings, and can optionally add Desktop/Startup shortcuts when built with Inno Setup.
+
+> Note: builds are currently unsigned until a code-signing certificate is available.
+
+### Developer one-click setup
 
 ```powershell
 git clone https://github.com/Wayan123/Simple-Music-Widget.git
@@ -73,13 +81,19 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 
 `install.ps1` stops any old running widget first, builds the app, adds a **Startup** shortcut (auto-run at boot), a **Start Menu** shortcut (right-click → *Pin to taskbar*), and launches it.
 
+### Build release artifacts
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-installer.ps1 -SelfContained
+```
+
+This publishes the app, creates a portable ZIP, and builds an installer `.exe`. If Inno Setup is unavailable locally, the script falls back to a no-admin IExpress installer.
+
 ### Or just run
 
 ```powershell
 dotnet run -c Release
 ```
-
-Prefer a prebuilt binary? Grab the ZIP from [**Releases**](https://github.com/Wayan123/Simple-Music-Widget/releases/latest).
 
 ---
 
@@ -103,7 +117,10 @@ It does **not** talk to YouTube/Spotify directly for control. It reads **SMTC** 
 | `TrayIcon.cs` | System-tray icon (show / exit) |
 | `App.xaml.cs` | Single-instance entry point (summons running instance) |
 | `MainWindow.xaml(.cs)` | UI overlay, search/history, queue, repeat/loop, auto show-hide |
-| `install.ps1` | Publish + Startup/Start-Menu shortcuts + yt-dlp update |
+| `install.ps1` | Developer publish + Startup/Start-Menu shortcuts + yt-dlp update |
+| `scripts/build-installer.ps1` | Release artifact builder: portable ZIP + installer `.exe` |
+| `installer/MusicWidget.iss` | Inno Setup installer definition |
+| `.github/workflows/windows-release.yml` | CI workflow for installer artifacts and tag releases |
 | `make_icon.py` | Generates the futuristic 3D icon |
 
 ---
@@ -111,14 +128,14 @@ It does **not** talk to YouTube/Spotify directly for control. It reads **SMTC** 
 ## 📦 Releasing a new version (maintainer)
 
 1. Bump `<Version>` in `MusicWidget.csproj`.
-2. Tag, publish, and release:
+2. Open a PR and verify the Windows installer workflow passes.
+3. Merge, tag, and push:
    ```powershell
-   git tag -a v1.1.0 -m "v1.1.0"; git push origin v1.1.0
-   dotnet publish -c Release -o publish
-   Compress-Archive publish\* MusicWidget-v1.1.0-win-x64.zip
-   gh release create v1.1.0 MusicWidget-v1.1.0-win-x64.zip --title "v1.1.0"
+   git tag -a v1.3.0 -m "v1.3.0"
+   git push origin v1.3.0
    ```
-3. Running widgets detect the new release and show a tray notification.
+4. GitHub Actions builds `MusicWidgetSetup-*-win-x64.exe` and the portable ZIP, then attaches both to the GitHub Release.
+5. Running widgets detect the new release and show a tray notification.
 
 ---
 
