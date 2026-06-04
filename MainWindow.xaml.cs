@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -91,8 +92,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            TitleText.Text = Text("SMTC unavailable", "SMTC tidak tersedia");
-            ArtistText.Text = ex.Message;
+            SetTitleText(Text("SMTC unavailable", "SMTC tidak tersedia"));
+            SetArtistText(ex.Message);
         }
         UpdateVolumeDisplay();
         _timer.Start();
@@ -196,9 +197,8 @@ public partial class MainWindow : Window
 
     private void HandleOwnedPlaybackFailure(string message)
     {
-        TitleText.Text = Text("Playback failed", "Gagal memutar media");
-        ArtistText.Text = message;
-        QueueMarqueeUpdate();
+        SetTitleText(Text("Playback failed", "Gagal memutar media"));
+        SetArtistText(message);
         PlayBtn.Content = "\uE768";
         if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) PlayNextInQueue();
         else { _queueActive = false; _ownedPlaybackActive = false; }
@@ -209,8 +209,8 @@ public partial class MainWindow : Window
         // Auto-hide when nothing is playing (unless searching or our own queue is active).
         if (!s.HasSession)
         {
-            TitleText.Text = Text("No media playing", "Tidak ada yang diputar");
-            ArtistText.Text = "";
+            SetTitleText(Text("No media playing", "Tidak ada yang diputar"));
+            SetArtistText("");
             Source.Text = Text("Music", "Musik");
             Art.Source = null;
             Progress.Value = 0;
@@ -221,8 +221,8 @@ public partial class MainWindow : Window
         }
 
         if (!IsVisible) { _userMoved = false; Show(); }
-        TitleText.Text = s.Title;
-        ArtistText.Text = s.Artist;
+        SetTitleText(s.Title);
+        SetArtistText(s.Artist);
         Source.Text = string.IsNullOrWhiteSpace(s.SourceApp) ? Text("Music", "Musik") : s.SourceApp;
         Art.Source = s.Thumbnail;
         PlayBtn.Content = s.IsPlaying ? "\uE769" : "\uE768"; // pause : play
@@ -235,6 +235,19 @@ public partial class MainWindow : Window
     private void UpdateProgress(double posSec)
     {
         Progress.Value = _durationSec > 0 ? Math.Clamp(posSec / _durationSec, 0, 1) : 0;
+    }
+
+    private void SetTitleText(string? text) => SetMarqueeText(TitleText, text, ref _titleMarqueeKey);
+
+    private void SetArtistText(string? text) => SetMarqueeText(ArtistText, text, ref _artistMarqueeKey);
+
+    private void SetMarqueeText(TextBlock textBlock, string? text, ref string? previousKey)
+    {
+        var value = text ?? "";
+        textBlock.Tag = value;
+        textBlock.Text = value;
+        previousKey = null;
+        QueueMarqueeUpdate();
     }
 
     private void QueueMarqueeUpdate()
@@ -251,37 +264,60 @@ public partial class MainWindow : Window
     private static void UpdateMarquee(Border viewport, TextBlock text, TranslateTransform transform,
                                       ref string? previousKey, double speedPixelsPerSecond)
     {
-        if (viewport.ActualWidth <= 0 || string.IsNullOrWhiteSpace(text.Text))
+        var original = text.Tag as string ?? text.Text ?? "";
+        if (viewport.ActualWidth <= 0 || string.IsNullOrWhiteSpace(original))
         {
+            text.Text = original;
             StopMarquee(transform, ref previousKey);
             return;
         }
 
-        text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var textWidth = text.DesiredSize.Width;
         var viewportWidth = viewport.ActualWidth;
-        var key = $"{text.Text}|{viewportWidth:0.0}|{textWidth:0.0}";
+        var originalWidth = MeasureTextWidth(text, original);
+        var key = $"{original}|{viewportWidth:0.0}|{originalWidth:0.0}";
         if (key == previousKey) return;
         previousKey = key;
 
         transform.BeginAnimation(TranslateTransform.XProperty, null);
         transform.X = 0;
 
-        var overflow = textWidth - viewportWidth;
-        if (overflow <= 4) return;
+        var overflow = originalWidth - viewportWidth;
+        if (overflow <= 4)
+        {
+            text.Text = original;
+            return;
+        }
 
-        var travel = overflow + 36; // small pause/gap before the loop resets.
-        var seconds = Math.Clamp(travel / speedPixelsPerSecond, 6, 24);
+        const string gap = "     •     ";
+        var cycleText = original + gap;
+        var cycleWidth = MeasureTextWidth(text, cycleText);
+        text.Text = cycleText + original;
+
+        var seconds = Math.Clamp(cycleWidth / speedPixelsPerSecond, 8, 30);
         var animation = new DoubleAnimation
         {
             From = 0,
-            To = -travel,
+            To = -cycleWidth,
             Duration = TimeSpan.FromSeconds(seconds),
-            BeginTime = TimeSpan.FromSeconds(1.2),
+            BeginTime = TimeSpan.FromSeconds(0.4),
             RepeatBehavior = RepeatBehavior.Forever,
             FillBehavior = FillBehavior.Stop
         };
         transform.BeginAnimation(TranslateTransform.XProperty, animation);
+    }
+
+    private static double MeasureTextWidth(TextBlock source, string text)
+    {
+        var dpi = VisualTreeHelper.GetDpi(source);
+        var formatted = new FormattedText(
+            text,
+            CultureInfo.CurrentUICulture,
+            source.FlowDirection,
+            new Typeface(source.FontFamily, source.FontStyle, source.FontWeight, source.FontStretch),
+            source.FontSize,
+            source.Foreground,
+            dpi.PixelsPerDip);
+        return formatted.WidthIncludingTrailingWhitespace;
     }
 
     private static void StopMarquee(TranslateTransform transform, ref string? previousKey)
@@ -370,8 +406,8 @@ public partial class MainWindow : Window
         _ownedPlaybackActive = true;
         _durationSec = 0;
         Art.Source = null;
-        TitleText.Text = Text("Loading local file...", "Memuat file lokal...");
-        ArtistText.Text = System.IO.Path.GetFileName(dlg.FileName);
+        SetTitleText(Text("Loading local file...", "Memuat file lokal..."));
+        SetArtistText(System.IO.Path.GetFileName(dlg.FileName));
         Source.Text = Text("Local file", "File lokal");
         QueueMarqueeUpdate();
         try
@@ -487,7 +523,7 @@ public partial class MainWindow : Window
             UpdateResultsToggleText();
             Results.Items.Clear();
             Results.Items.Add(new PlayerItem { Display = Text("YouTube search failed", "Gagal mencari YouTube"), Subtitle = ex.Message });
-            ArtistText.Text = ex.Message;
+            SetArtistText(ex.Message);
         }
     }
 
@@ -571,15 +607,14 @@ public partial class MainWindow : Window
         _durationSec = 0;            // reset so progress bar starts fresh for the new track
         Art.Source = null;           // show the built-in music template instead of stale art
         HistoryStore.AddPlayed(r);
-        TitleText.Text = Text("Loading...", "Memuat..."); ArtistText.Text = r.Title; Source.Text = "YouTube";
-        QueueMarqueeUpdate();
+        SetTitleText(Text("Loading...", "Memuat...")); SetArtistText(r.Title); Source.Text = "YouTube";
         try
         {
             var url = await YouTubeService.GetAudioUrlAsync(r.Id);
             if (generation != _playGeneration) return;
             if (url is null) { HandleTrackLoadFailure(Text("Empty audio URL", "URL audio kosong")); return; }
 
-            TitleText.Text = "Buffering...";
+            SetTitleText("Buffering...");
             var pl = EnsurePlayer();
             if (pl is null) { HandleTrackLoadFailure(Text("Player unavailable", "Pemutar tidak tersedia")); return; }
             await pl.PlayStreamAsync(url, r.Title, "YouTube");
@@ -593,9 +628,8 @@ public partial class MainWindow : Window
 
     private void HandleTrackLoadFailure(string message)
     {
-        TitleText.Text = Text("Load failed", "Gagal memuat");
-        ArtistText.Text = message;
-        QueueMarqueeUpdate();
+        SetTitleText(Text("Load failed", "Gagal memuat"));
+        SetArtistText(message);
         if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) PlayNextInQueue();
         else { _queueActive = false; _ownedPlaybackActive = false; }
     }
