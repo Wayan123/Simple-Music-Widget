@@ -4,3 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Temporarily disabled because GitHub Actions is currently blocked by an
+    # account billing issue, so automatic PRs show failing checks even when the
+    # dependency update itself is not the problem. Set this back to a positive
+    # number after Actions is available again.
+    open-pull-requests-limit: 0
