@@ -14,6 +14,13 @@ Set-Location $root
 $version = $project.Project.PropertyGroup.Version | Select-Object -First 1
 if ([string]::IsNullOrWhiteSpace($version)) { $version = '0.0.0' }
 
+if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME) {
+  $expectedTag = "v$version"
+  if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+    throw "Tag/version mismatch: tag is '$($env:GITHUB_REF_NAME)' but MusicWidget.csproj version is '$version' (expected '$expectedTag')."
+  }
+}
+
 $artifacts = Join-Path $root 'artifacts'
 $publishDir = Join-Path $artifacts "publish\$Runtime"
 $distDir = Join-Path $root 'dist'
@@ -31,6 +38,9 @@ if ($SelfContained) { $publishArgs += '--self-contained'; $publishArgs += 'true'
 else { $publishArgs += '--self-contained'; $publishArgs += 'false' }
 & dotnet @publishArgs
 if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+
+Copy-Item -Path (Join-Path $root 'LICENSE') -Destination (Join-Path $publishDir 'LICENSE') -Force
+Copy-Item -Path (Join-Path $root 'README.md') -Destination (Join-Path $publishDir 'README.md') -Force
 
 $zipPath = Join-Path $distDir "MusicWidget-portable-$version-$Runtime.zip"
 if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
@@ -92,7 +102,7 @@ CAB_FixedSize=0
 CAB_ResvCodeSigning=0
 RebootMode=N
 InstallPrompt=
-DisplayLicense=
+DisplayLicense=LICENSE
 FinishMessage=Music Widget has been installed.
 TargetName=$target
 FriendlyName=Music Widget Setup
@@ -123,5 +133,15 @@ $(($fileList -join "`r`n"))
 $iscc = Find-InnoSetup
 if ($iscc -and -not $PreferIExpress) { Build-InnoInstaller $iscc }
 else { Build-IExpressInstaller }
+
+$checksumPath = Join-Path $distDir "MusicWidget-$version-$Runtime-SHA256SUMS.txt"
+Get-ChildItem -Path $distDir -File |
+  Where-Object { $_.Name -like "MusicWidget*$version*$Runtime*" -and $_.Extension -in @('.exe', '.zip') } |
+  Sort-Object Name |
+  ForEach-Object {
+    $hash = Get-FileHash -Algorithm SHA256 -Path $_.FullName
+    "$($hash.Hash.ToLowerInvariant())  $($_.Name)"
+  } | Set-Content -Path $checksumPath -Encoding ASCII
+Write-Host "Checksums: $checksumPath"
 
 Write-Host "Artifacts written to: $distDir"

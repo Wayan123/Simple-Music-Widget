@@ -105,16 +105,6 @@ public static class YouTubeService
         return lines.Count > 0 ? lines[0] : null;
     }
 
-    /// <summary>Self-update yt-dlp in the background so YouTube keeps working. Best-effort.</summary>
-    public static void UpdateInBackground()
-    {
-        _ = Task.Run(async () =>
-        {
-            try { await RunAsync(new[] { "-U" }, timeoutSeconds: 120); }
-            catch { }
-        });
-    }
-
     private static async Task<List<string>> RunAsync(string[] args, int timeoutSeconds = 45)
     {
         var psi = new ProcessStartInfo

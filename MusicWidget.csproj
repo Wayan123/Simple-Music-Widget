@@ -12,7 +12,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>MusicWidget</AssemblyName>
     <RootNamespace>MusicWidget</RootNamespace>
-    <Version>1.3.1</Version>
+    <Version>1.3.2</Version>
     <!-- Lightweight runtime knobs (InvariantGlobalization removed: breaks WPF TextBox input) -->
     <DebuggerSupport>false</DebuggerSupport>
     <EventSourceSupport>false</EventSourceSupport>

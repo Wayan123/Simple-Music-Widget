@@ -26,6 +26,7 @@ PrivilegesRequired=lowest
 OutputDir={#OutputDir}
 OutputBaseFilename=MusicWidgetSetup-{#MyAppVersion}-win-x64
 SetupIconFile=..\icon.ico
+LicenseFile=..\LICENSE
 UninstallDisplayIcon={app}\MusicWidget.exe
 Compression=lzma2
 SolidCompression=yes

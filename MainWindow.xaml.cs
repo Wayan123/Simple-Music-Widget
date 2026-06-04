@@ -96,7 +96,6 @@ public partial class MainWindow : Window
         }
         UpdateVolumeDisplay();
         _timer.Start();
-        YouTubeService.UpdateInBackground(); // keep yt-dlp fresh so YouTube keeps working
         _ = CheckUpdatesAsync();
         TrimWorkingSet(); // release startup memory back to the OS
     }

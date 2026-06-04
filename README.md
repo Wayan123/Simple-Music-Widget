@@ -29,7 +29,7 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 - 🔁 **Repeat & Loop** — replay the last track, or loop the current one forever.
 - 🗑️ **One-tap delete** — remove any history item with its little ✕.
 - 🚀 **Auto-start + auto-show** — runs at boot, appears only when music plays.
-- 🔔 **Auto-update** — keeps `yt-dlp` fresh and notifies on new app releases.
+- 🔔 **Update notifications** — checks GitHub Releases and notifies when a new app version is available.
 
 ---
 
@@ -58,11 +58,18 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 
 ## 🚀 Install (Windows)
 
-**Requirements:** Windows 10/11 + [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0). For the YouTube feature: `yt-dlp` + `ffmpeg`.
+**For normal users:** Windows 10/11. The release installer is self-contained and does not require a separate .NET install.
+
+**For YouTube playback:** install `yt-dlp` and `ffmpeg` from trusted package managers:
 
 ```powershell
-winget install Microsoft.DotNet.SDK.8        # to build
-winget install yt-dlp.yt-dlp Gyan.FFmpeg     # for YouTube audio
+winget install yt-dlp.yt-dlp Gyan.FFmpeg
+```
+
+**For developers:** install the .NET 8 SDK:
+
+```powershell
+winget install Microsoft.DotNet.SDK.8
 ```
 
 ### Recommended: Windows installer `.exe`
@@ -71,7 +78,9 @@ Download `MusicWidgetSetup-*-win-x64.exe` from [**Releases**](https://github.com
 
 Release installers are self-contained for Windows x64, so users do not need to install the .NET Desktop Runtime separately. The installer is per-user (no admin required), adds a Start Menu shortcut, supports uninstall from Windows Settings, and can optionally add Desktop/Startup shortcuts when built with Inno Setup.
 
-> Note: builds are currently unsigned until a code-signing certificate is available.
+Verify downloads with the `SHA256SUMS.txt` file attached to each release.
+
+> Note: builds are currently unsigned until a code-signing certificate is available, so Windows SmartScreen may show a warning.
 
 ### Developer one-click setup
 
@@ -89,7 +98,7 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 powershell -ExecutionPolicy Bypass -File scripts/build-installer.ps1 -SelfContained
 ```
 
-This publishes the app, creates a portable ZIP, and builds an installer `.exe`. If Inno Setup is unavailable locally, the script falls back to a no-admin IExpress installer.
+This publishes the app, copies `LICENSE`/`README.md` into the payload, creates a portable ZIP, builds an installer `.exe`, and writes a SHA256 checksum file. If Inno Setup is unavailable locally, the script falls back to a no-admin IExpress installer.
 
 ### Or just run
 
@@ -103,7 +112,19 @@ dotnet run -c Release
 
 It does **not** talk to YouTube/Spotify directly for control. It reads **SMTC** (`Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager`), the central layer every modern media app reports to. For its own YouTube player, `yt-dlp` resolves the audio stream and `ffmpeg` bridges it into a local file that WPF `MediaPlayer` plays (WPF can't open googlevideo URLs directly).
 
-> ⚠️ Playing YouTube audio outside a browser is against YouTube's ToS and can break when YouTube changes. `yt-dlp` is auto-updated to reduce breakage.
+> ⚠️ Playing YouTube audio outside a browser is against YouTube's ToS and can break when YouTube changes. Keep `yt-dlp` and `ffmpeg` updated through your package manager, for example `winget upgrade yt-dlp.yt-dlp Gyan.FFmpeg`.
+
+---
+
+## 🔒 Privacy and local data
+
+Music Widget stores lightweight local preferences/history only on your machine:
+
+- YouTube search history and played-track history: `%AppData%\\MusicWidget`
+- Language preference: `%AppData%\\MusicWidget\\language.txt`
+- Installed app files, when using the installer: `%LocalAppData%\\Programs\\MusicWidget`
+
+The app does not upload history to any service. YouTube search/playback uses your locally installed `yt-dlp` executable.
 
 ---
 
@@ -122,6 +143,7 @@ It does **not** talk to YouTube/Spotify directly for control. It reads **SMTC** 
 | `install.ps1` | Developer publish + Startup/Start-Menu shortcuts + yt-dlp update |
 | `scripts/build-installer.ps1` | Release artifact builder: portable ZIP + installer `.exe` |
 | `installer/MusicWidget.iss` | Inno Setup installer definition |
+| `.github/workflows/ci.yml` | PR/main build and publish smoke test |
 | `.github/workflows/windows-release.yml` | CI workflow for installer artifacts and tag releases |
 | `make_icon.py` | Generates the futuristic 3D icon |
 
@@ -130,13 +152,13 @@ It does **not** talk to YouTube/Spotify directly for control. It reads **SMTC** 
 ## 📦 Releasing a new version (maintainer)
 
 1. Bump `<Version>` in `MusicWidget.csproj`.
-2. Open a PR and verify the Windows installer workflow passes.
-3. Merge, tag, and push:
+2. Open a PR and verify CI passes.
+3. Merge, tag, and push. The tag must match the project version:
    ```powershell
-   git tag -a v1.3.0 -m "v1.3.0"
-   git push origin v1.3.0
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin vX.Y.Z
    ```
-4. GitHub Actions builds `MusicWidgetSetup-*-win-x64.exe` and the portable ZIP, then attaches both to the GitHub Release.
+4. GitHub Actions builds `MusicWidgetSetup-*-win-x64.exe`, the portable ZIP, and `SHA256SUMS.txt`, then attaches them to the GitHub Release.
 5. Running widgets detect the new release and show a tray notification.
 
 ---
