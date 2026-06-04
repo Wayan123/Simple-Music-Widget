@@ -19,6 +19,7 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 
 - 🪶 **Lightweight** — ~85 MB working set, single small `.exe`, no heavy frameworks.
 - 🌐 **Bilingual UI** — English by default with a compact `ID/EN` toggle saved between sessions.
+- 📰 **Auto-scrolling track text** — long titles and artist names scroll smoothly from right to left so the full text remains readable.
 - 🎛️ **Universal control** — prev / play-pause / next + live progress bar for any source.
 - 🔊 **Hideable widget volume slider** — adjust the widget-owned local/YouTube player volume safely, then hide it to keep the overlay minimal.
 - 📁 **Broad local media support** — play common audio/video containers (`mp3`, `mp4`, `mkv`, `webm`, `flac`, `ogg`, and more) by extracting audio when needed.
@@ -46,11 +47,12 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 2. **Open local media** — click the file button and choose common audio/video media (`mp3`, `mp4`, `mkv`, `webm`, `flac`, `ogg`, etc.). Video containers are played as audio.
 3. **Search YouTube** — click 🔎, type a song, press Enter. Pick a result to play its audio right inside the widget (no browser).
 4. **Use volume safely** — click the volume icon only when needed, move the **Vol** slider, then hide it again for a compact widget.
-5. **Play all** — hit **▶ Putar semua** to queue the whole list; it auto-advances track to track.
-6. **History** — open the search box: empty can show recently **played** tracks; use **Daftar** to show/hide the list, and switch tabs with **Hasil** / **Riwayat**.
-7. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current one endlessly.
-8. **Switch language** — click the tiny `ID/EN` button to switch between English and Indonesian.
-9. **Delete** — click the small ✕ on any history row to remove it.
+5. **Read long tracks** — long titles and artist names automatically marquee from right to left when they do not fit.
+6. **Play all** — hit **▶ Play all** to queue the whole list; it auto-advances track to track.
+7. **History** — open the search box: empty can show recently **played** tracks; use **List** to show/hide the list, and switch tabs with **Results** / **History**.
+8. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current one endlessly.
+9. **Switch language** — click the tiny `ID/EN` button to switch between English and Indonesian.
+10. **Delete** — click the small ✕ on any history row to remove it.
 
 ---
 
