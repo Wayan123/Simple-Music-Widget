@@ -135,14 +135,26 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Title + artist -->
+                <!-- Title + artist (auto-marquee when text overflows) -->
                 <StackPanel Grid.Row="1">
-                    <TextBlock x:Name="TitleText" Text="No media playing"
-                               Foreground="#F5F5F5" FontSize="14" FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis"/>
-                    <TextBlock x:Name="ArtistText" Text=""
-                               Foreground="#B5B5B5" FontSize="12"
-                               TextTrimming="CharacterEllipsis"/>
+                    <Border x:Name="TitleViewport" ClipToBounds="True" Height="20">
+                        <TextBlock x:Name="TitleText" Text="No media playing"
+                                   Foreground="#F5F5F5" FontSize="14" FontWeight="SemiBold"
+                                   TextWrapping="NoWrap" HorizontalAlignment="Left">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="TitleTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Border>
+                    <Border x:Name="ArtistViewport" ClipToBounds="True" Height="17">
+                        <TextBlock x:Name="ArtistText" Text=""
+                                   Foreground="#B5B5B5" FontSize="12"
+                                   TextWrapping="NoWrap" HorizontalAlignment="Left">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="ArtistTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Border>
                 </StackPanel>
 
                 <!-- Progress + controls -->
