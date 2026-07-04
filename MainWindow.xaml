@@ -121,17 +121,28 @@
 
                 <!-- Source + actions -->
                 <Grid Grid.Row="0" Margin="0,0,0,2">
-                    <TextBlock x:Name="Source" Text="Music" Foreground="#9A9A9A" FontSize="11"
-                               VerticalAlignment="Center"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="Source" Grid.Column="0" Text="Music" Foreground="#9A9A9A" FontSize="11"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,4,0"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="LangBtn" Style="{StaticResource TextBtn}" Content="ID"
                                 ToolTip="Switch language" Click="OnToggleLanguage"/>
                         <Button x:Name="SearchBtn" Style="{StaticResource IconBtn}" Content="&#xE721;"
                                 ToolTip="Search YouTube" Click="OnToggleSearch"/>
                         <Button x:Name="OpenBtn" Style="{StaticResource IconBtn}" Content="&#xE8E5;"
                                 ToolTip="Open local media file" Click="OnOpenFile"/>
-                        <Button x:Name="CloseBtn" Style="{StaticResource IconBtn}" Content="&#xE711;"
-                                ToolTip="Close" Click="OnClose"/>
+                        <Button x:Name="MinimizeBtn" AutomationProperties.AutomationId="MinimizeBtn"
+                                Style="{StaticResource IconBtn}" Content="&#xE921;"
+                                ToolTip="Minimize" Click="OnMinimize"/>
+                        <Button x:Name="MaximizeBtn" AutomationProperties.AutomationId="MaximizeBtn"
+                                Style="{StaticResource IconBtn}" Content="&#xE922;"
+                                ToolTip="Maximize" Click="OnToggleMaximize"/>
+                        <Button x:Name="HideBtn" AutomationProperties.AutomationId="HideBtn"
+                                Style="{StaticResource IconBtn}" Content="&#xE711;"
+                                ToolTip="Hide until unhide" Click="OnHide"/>
                     </StackPanel>
                 </Grid>
 

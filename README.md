@@ -28,7 +28,8 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 - ▶️ **Play all** — queue an entire result list or your history (auto-advances).
 - 🔁 **Repeat & Loop** — replay the last track, or loop the current one forever.
 - 🗑️ **One-tap delete** — remove any history item with its little ✕.
-- 🚀 **Auto-start + auto-show** — runs at boot, appears only when music plays.
+- 🚀 **Auto-start + optional auto-show** — runs at boot and appears when music plays, unless you manually Hide it.
+- 🙈 **Manual Hide / Unhide + window controls** — Hide suppresses media-triggered popups until tray/shortcut Unhide; Minimize and Maximize/Restore are built in.
 - 🔔 **Update notifications** — checks GitHub Releases and notifies when a new app version is available.
 
 ---
@@ -51,8 +52,10 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 6. **Play all** — hit **▶ Play all** to queue the whole list; it auto-advances track to track.
 7. **History** — open the search box: empty can show recently **played** tracks; use **List** to show/hide the list, and switch tabs with **Results** / **History**.
 8. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current one endlessly.
-9. **Switch language** — click the tiny `ID/EN` button to switch between English and Indonesian.
-10. **Delete** — click the small ✕ on any history row to remove it.
+9. **Hide / Unhide** — click ✕ to hide the widget and stop automatic popups while media keeps playing. Use the tray icon or launch shortcut again to Unhide.
+10. **Minimize / Maximize** — use `_` for temporary minimize-to-tray, and the maximize button to toggle a wider widget layout.
+11. **Switch language** — click the tiny `ID/EN` button to switch between English and Indonesian.
+12. **Delete** — click the small ✕ on any history row to remove it.
 
 ---
 
@@ -137,11 +140,12 @@ The app does not upload history to any service. YouTube search/playback uses you
 | `YouTubeService.cs` | yt-dlp search + audio-URL resolve; yt-dlp/ffmpeg path resolve |
 | `HistoryStore.cs` | JSON persistence for searches & played tracks |
 | `UpdateService.cs` | GitHub Releases version checker |
-| `TrayIcon.cs` | System-tray icon (show / exit) |
+| `TrayIcon.cs` | System-tray icon (hide / unhide / exit) |
 | `App.xaml.cs` | Single-instance entry point (summons running instance) |
 | `MainWindow.xaml(.cs)` | UI overlay, search/history, queue, repeat/loop, auto show-hide |
 | `install.ps1` | Developer publish + Startup/Start-Menu shortcuts + yt-dlp update |
 | `scripts/build-installer.ps1` | Release artifact builder: portable ZIP + installer `.exe` |
+| `scripts/regression-window-controls.ps1` | UI Automation smoke test for Hide/Unhide, Minimize, and Maximize/Restore |
 | `installer/MusicWidget.iss` | Inno Setup installer definition |
 | `.github/workflows/ci.yml` | PR/main build and publish smoke test |
 | `.github/workflows/windows-release.yml` | CI workflow for installer artifacts and tag releases |

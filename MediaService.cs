@@ -151,8 +151,8 @@ public sealed class MediaService : IDisposable
     }
 
     public async Task PlayPauseAsync() { if (_session is not null) try { await _session.TryTogglePlayPauseAsync(); } catch { } }
-    public async Task NextAsync()      { if (_session is not null) try { await _session.TrySkipNextAsync(); } catch { } }
-    public async Task PreviousAsync()  { if (_session is not null) try { await _session.TrySkipPreviousAsync(); } catch { } }
+    public async Task NextAsync() { if (_session is not null) try { await _session.TrySkipNextAsync(); } catch { } }
+    public async Task PreviousAsync() { if (_session is not null) try { await _session.TrySkipPreviousAsync(); } catch { } }
 
     public MediaSnapshot? PollTimeline()
     {

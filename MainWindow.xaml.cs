@@ -33,12 +33,17 @@ public sealed class PlayerItem
 
 public partial class MainWindow : Window
 {
+    private const double CompactWidgetWidth = 340;
+    private const double ExpandedWidgetWidth = 520;
+
     private readonly MediaService _media = new();
     private LocalPlayer? _local;
     private TrayIcon? _tray;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private double _durationSec;
     private bool _autoStart;
+    private bool _manualHide;      // true after Hide: suppress all media-triggered auto-show until user unhides
+    private bool _isExpanded;
 
     // Queue of tracks to auto-advance through; index of the current track.
     private readonly List<YtResult> _queue = new();
@@ -73,7 +78,7 @@ public partial class MainWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         PositionNearTray();
-        _tray = new TrayIcon(onShow: SummonWidget, onExit: () => System.Windows.Application.Current.Shutdown());
+        _tray = new TrayIcon(onShow: SummonWidget, onHide: HideManually, onExit: () => System.Windows.Application.Current.Shutdown());
         if (_autoStart) Hide();          // boot: wait for music
         else SummonWidget();             // manual launch: show immediately (usable even when idle)
 
@@ -149,7 +154,11 @@ public partial class MainWindow : Window
         LangBtn.ToolTip = IsIndonesian ? "Switch to English" : "Ganti ke Bahasa Indonesia";
         SearchBtn.ToolTip = Text("Search YouTube", "Cari YouTube");
         OpenBtn.ToolTip = Text("Open local media file", "Buka file media lokal");
-        CloseBtn.ToolTip = Text("Close", "Tutup");
+        MinimizeBtn.ToolTip = Text("Minimize", "Minimize");
+        MaximizeBtn.ToolTip = _isExpanded
+            ? Text("Restore compact size", "Kembalikan ukuran kecil")
+            : Text("Maximize widget width", "Perbesar widget");
+        HideBtn.ToolTip = Text("Hide until unhide from tray", "Sembunyikan sampai di-unhide dari tray");
         RepeatBtn.ToolTip = Text("Repeat last track", "Putar ulang lagu terakhir");
         LoopBtn.ToolTip = Text("Loop this track", "Loop lagu ini");
         VolumeToggleBtn.ToolTip = Text("Show/hide volume", "Tampilkan/sembunyikan volume");
@@ -206,6 +215,10 @@ public partial class MainWindow : Window
 
     private void Render(MediaSnapshot s)
     {
+        // Manual Hide is a user override: playback events must not pop the widget up again.
+        // Keep UI data fresh while hidden so an explicit Unhide immediately shows current media.
+        var suppressAutoShow = _manualHide;
+
         // Auto-hide when nothing is playing (unless searching or our own queue is active).
         if (!s.HasSession)
         {
@@ -216,11 +229,20 @@ public partial class MainWindow : Window
             Progress.Value = 0;
             PlayBtn.Content = "\uE768"; // play glyph
             QueueMarqueeUpdate();
-            if (SearchPanel.Visibility != Visibility.Visible && !_queueActive && !_ownedPlaybackActive && IsVisible) Hide();
+            if ((suppressAutoShow || (SearchPanel.Visibility != Visibility.Visible && !_queueActive && !_ownedPlaybackActive)) && IsVisible) Hide();
             return;
         }
 
-        if (!IsVisible) { _userMoved = false; Show(); }
+        if (!IsVisible && !suppressAutoShow)
+        {
+            _userMoved = false;
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            Show();
+        }
+        else if (IsVisible && suppressAutoShow)
+        {
+            Hide();
+        }
         SetTitleText(s.Title);
         SetArtistText(s.Artist);
         Source.Text = string.IsNullOrWhiteSpace(s.SourceApp) ? Text("Music", "Musik") : s.SourceApp;
@@ -368,7 +390,9 @@ public partial class MainWindow : Window
     // Bring the widget up on demand (from tray), opening search so it's usable when idle.
     private void SummonWidget()
     {
+        _manualHide = false;  // explicit tray/shortcut summon is the Unhide action
         _userMoved = false;   // a deliberate summon re-homes the widget to the tray corner
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Show();
         // Defer panel-open to after layout so SizeToContent grows the window reliably.
         _ = Dispatcher.BeginInvoke(new Action(() =>
@@ -390,7 +414,37 @@ public partial class MainWindow : Window
     // Called when a second launch (shortcut/taskbar click) signals this running instance.
     public void SummonFromTray() => SummonWidget();
 
-    private void OnClose(object sender, RoutedEventArgs e) { _queueActive = false; Hide(); } // hide; reappears on next music
+    private void HideManually()
+    {
+        _manualHide = true;
+        Hide();
+    }
+
+    private void OnHide(object sender, RoutedEventArgs e) => HideManually();
+
+    private void OnMinimize(object sender, RoutedEventArgs e)
+    {
+        // Minimize is temporary: unlike manual Hide, media events may show the widget again.
+        _manualHide = false;
+        WindowState = WindowState.Minimized;
+        Hide();
+    }
+
+    private void OnToggleMaximize(object sender, RoutedEventArgs e)
+    {
+        _isExpanded = !_isExpanded;
+        Width = _isExpanded ? ExpandedWidgetWidth : CompactWidgetWidth;
+        MaximizeBtn.Content = _isExpanded ? "\uE923" : "\uE922"; // restore : maximize
+        MaximizeBtn.ToolTip = _isExpanded
+            ? Text("Restore compact size", "Kembalikan ukuran kecil")
+            : Text("Maximize widget width", "Perbesar widget");
+        _ = Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (!_userMoved) PositionNearTray();
+            else ClampOnScreen();
+            QueueMarqueeUpdate();
+        }), DispatcherPriority.Loaded);
+    }
 
     private async void OnOpenFile(object sender, RoutedEventArgs e)
     {

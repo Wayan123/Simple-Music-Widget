@@ -39,7 +39,8 @@ public partial class App : Application
                 _showEvent.WaitOne();
                 Dispatcher.Invoke(() => window.SummonFromTray());
             }
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         listener.Start();
 
         // We manage visibility ourselves; don't quit when the window hides.

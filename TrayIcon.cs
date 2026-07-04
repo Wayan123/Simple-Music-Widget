@@ -4,15 +4,16 @@ using System.Windows.Forms;
 
 namespace MusicWidget;
 
-/// <summary>Notification-area icon: show the widget on demand and exit cleanly.</summary>
+/// <summary>Notification-area icon: hide/unhide the widget on demand and exit cleanly.</summary>
 public sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon _icon;
 
-    public TrayIcon(Action onShow, Action onExit)
+    public TrayIcon(Action onShow, Action onHide, Action onExit)
     {
         var menu = new ContextMenuStrip();
-        menu.Items.Add("Tampilkan widget", null, (_, _) => onShow());
+        menu.Items.Add("Tampilkan / Unhide widget", null, (_, _) => onShow());
+        menu.Items.Add("Sembunyikan widget", null, (_, _) => onHide());
         menu.Items.Add("Keluar", null, (_, _) => onExit());
 
         _icon = new NotifyIcon
