@@ -1,0 +1,1 @@
+Simple Music Widget is a Windows WPF music overlay. The recording demonstrates local playback, play/pause, the widget-owned volume slider, expanded and compact layouts, minimize, and explicit restore. The repository is public and MIT licensed. Do not claim download counts, guaranteed productivity gains, or that the demonstrated branch has already been released as a new installer.

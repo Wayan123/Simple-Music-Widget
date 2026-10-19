@@ -7,9 +7,13 @@
 **A tiny, futuristic now-playing overlay for Windows.**
 One widget controls *everything* — YouTube & Spotify in your browser, VLC, Windows Media Player, and more.
 
-<img src="docs/search.png" width="360" alt="Music Widget with YouTube search"/>
+<img src="docs/music-widget-demo.gif" width="720" alt="Animated demo of Music Widget playback, volume, expand/compact, and hide/restore"/>
 
 </div>
+
+The GIF shows the real Windows app with an original local demo track. It is silent; the charcoal–green backdrop is presentation artwork, not a change to the widget UI.
+
+Social-video sources and Indonesian captions: [`videos/music-widget-demo/`](videos/music-widget-demo/README.md).
 
 ---
 

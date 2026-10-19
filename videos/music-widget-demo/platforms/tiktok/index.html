@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><title>Music Widget — tiktok</title>
+<script src="assets/gsap.min.js"></script>
+<style>
+@font-face{font-family:Demo;src:url('assets/DemoSans-Regular.ttf');font-weight:400}
+@font-face{font-family:Demo;src:url('assets/DemoSans-Bold.ttf');font-weight:700}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+#main{position:relative;width:1080px;height:1920px;background:#101914;color:#f5f5f5;font-family:Demo,sans-serif;overflow:hidden}
+.stage{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,#214b33 0%,#13251b 40%,#101914 74%)}
+.brand,.heading,.labels,.foot,.note{z-index:2}
+.brand{position:absolute;top:82px;left:80px;display:flex;align-items:center;gap:20px;font-size:28px;font-weight:700}
+.brand img{width:52px;height:52px}
+.heading{position:absolute;left:80px;top:220px;width:850px}
+h1{font-size:82px;line-height:1.06;letter-spacing:-1.8px;margin:35px 0 0;font-weight:700}
+.subtitle{font-size:30px;line-height:1.4;color:#b5b5b5;margin-top:24px}
+.labels{position:absolute;top:730px;left:80px;width:830px;height:60px}
+.step{position:absolute;opacity:0;visibility:hidden;font-size:34px;line-height:1.4;font-weight:700}
+.step span{color:#7ee7a2;margin-right:18px;font-weight:400}
+.hero{position:absolute;left:-70px;top:850px;width:1120px;height:520px;transform-origin:50% 50%}
+video,.end-still{position:absolute;width:1120px;height:520px;inset:0;object-fit:contain}
+.end-still{opacity:0;visibility:hidden}
+.pulse{position:absolute;width:32px;height:32px;margin:-16px;border:3px solid #9cf4ba;border-radius:50%;opacity:0;pointer-events:none}
+.foot{position:absolute;top:1390px;left:80px;width:820px}
+.cta{font-size:43px;font-weight:700;line-height:1.25;opacity:0;visibility:hidden}
+.repo{font-size:29px;color:#b5b5b5;line-height:1.4;margin-top:18px;opacity:0;visibility:hidden}
+.note{position:absolute;left:80px;top:1580px;color:#b5b5b5;font-size:21px}
+</style></head><body>
+<div id="main" data-composition-id="main" data-width="1080" data-height="1920" data-duration="22">
+<div class="stage" data-layout-ignore></div>
+<div class="brand"><img src="assets/icon.png" alt="">Simple Music Widget</div>
+<div class="heading"><h1>Masih pindah tab<br>buat pause musik?</h1><div class="subtitle">Taruh kontrolnya di desktop.</div></div>
+<div class="labels"><div class="step step-0"><span>01</span>Putar & jeda</div><div class="step step-1"><span>02</span>Atur volume</div><div class="step step-2"><span>03</span>Lebarkan saat perlu</div><div class="step step-3"><span>04</span>Sembunyikan sementara</div><div class="step step-4"><span>05</span>Tampilkan lagi</div></div>
+<div class="hero" data-layout-allow-overflow>
+<video id="widget" src="assets/widget-source.webm" data-start="2" data-duration="16" data-track-index="1" muted playsinline></video>
+<img class="end-still" src="assets/widget-final.png" alt="Music Widget setelah dipulihkan">
+<div class="pulse pulse-0" style="left:540px;top:332px"></div><div class="pulse pulse-1" style="left:540px;top:332px"></div><div class="pulse pulse-2" style="left:796px;top:332px"></div><div class="pulse pulse-5" style="left:796px;top:312px"></div><div class="pulse pulse-6" style="left:810px;top:178px"></div><div class="pulse pulse-7" style="left:990px;top:178px"></div><div class="pulse pulse-8" style="left:766px;top:178px"></div><div class="pulse pulse-10" style="left:678px;top:117.41px"></div>
+</div>
+<div class="foot"><div class="cta">Gratis. Open source. Windows.</div><div class="repo">Wayan123 / Simple-Music-Widget<br>Source &amp; cara pakai di GitHub.</div></div>
+<div class="note">Rekaman aplikasi nyata · demo file lokal</div>
+<audio id="music" src="assets/demo-track.wav" data-start="0" data-duration="22" data-track-index="2" data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.8,&quot;v&quot;:0.6},{&quot;t&quot;:20.7,&quot;v&quot;:0.6},{&quot;t&quot;:22,&quot;v&quot;:0}]}]}"></audio>
+</div><script>
+const tl=gsap.timeline({paused:true});
+tl.set('.hero',{scale:1.12},0);
+tl.from('.heading',{y:22,opacity:0,duration:.6,ease:'power3.out'},0);
+tl.set(".step-0", {autoAlpha:1}, 2).set(".step-0", {autoAlpha:0}, 6);
+tl.set(".step-1", {autoAlpha:1}, 6).set(".step-1", {autoAlpha:0}, 10.4);
+tl.set(".step-2", {autoAlpha:1}, 10.4).set(".step-2", {autoAlpha:0}, 13.2);
+tl.set(".step-3", {autoAlpha:1}, 13.2).set(".step-3", {autoAlpha:0}, 14.3);
+tl.set(".step-4", {autoAlpha:1}, 14.3).set(".step-4", {autoAlpha:0}, 18);
+tl.to('.hero',{scale:0.79,duration:.35,ease:'power2.inOut'},10.05);
+tl.to('.hero',{scale:1.12,duration:.35,ease:'power2.inOut'},12.05);
+tl.fromTo(".pulse-0",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 3.8);tl.fromTo(".pulse-1",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 4.8);tl.fromTo(".pulse-2",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 6);tl.fromTo(".pulse-5",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 9.6);tl.fromTo(".pulse-6",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 10.4);tl.fromTo(".pulse-7",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 12);tl.fromTo(".pulse-8",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 13.2);tl.fromTo(".pulse-10",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 15.7);
+tl.set('.end-still',{autoAlpha:1},18);
+tl.fromTo('.cta',{y:16,autoAlpha:0},{y:0,autoAlpha:1,duration:.45,ease:'power3.out',immediateRender:false},18);
+tl.to('.repo',{autoAlpha:1,duration:.35},18.4);
+tl.set('.brand',{opacity:1},22);
+window.__timelines=window.__timelines||{};window.__timelines.main=tl;tl.seek(0);
+</script></body></html>

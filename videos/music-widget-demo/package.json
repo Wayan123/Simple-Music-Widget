@@ -1,0 +1,10 @@
+{
+  "name": "music-widget-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bash \"$HOME/.agents/skills/hyperframes-suite/scripts/hf.sh\" preview",
+    "check": "bash \"$HOME/.agents/skills/hyperframes-suite/scripts/hf.sh\" check",
+    "render": "bash \"$HOME/.agents/skills/hyperframes-suite/scripts/hf.sh\" render"
+  }
+}

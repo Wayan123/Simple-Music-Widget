@@ -1,0 +1,6 @@
+platforms/*/assets/
+**/snapshots/
+**/renders/
+**/.hyperframes/
+**/.hf-*/
+**/node_modules/
