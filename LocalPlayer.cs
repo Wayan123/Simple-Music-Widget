@@ -285,7 +285,10 @@ public sealed class LocalPlayer : IDisposable
         var temp = _tempMedia;
         _ffmpeg = null;
         _tempMedia = null;
+        // WPF Close resets Volume to 0.5; source changes must preserve the user's level.
+        var volume = _player.Volume;
         _player.Close();
+        _player.Volume = volume;
         _isPlaying = false;
 
         if (proc is not null)

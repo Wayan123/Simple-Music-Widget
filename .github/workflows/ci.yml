@@ -31,6 +31,10 @@ jobs:
         shell: pwsh
         run: dotnet build MusicWidget.csproj -c Release --no-restore -v:minimal
 
+      - name: Window and presentation regression
+        shell: pwsh
+        run: ./scripts/regression-window-controls.ps1
+
       - name: Publish smoke test
         shell: pwsh
         run: ./scripts/build-installer.ps1 -SkipInstaller

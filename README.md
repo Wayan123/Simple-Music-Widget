@@ -28,8 +28,8 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 - ▶️ **Play all** — queue an entire result list or your history (auto-advances).
 - 🔁 **Repeat & Loop** — replay the last track, or loop the current one forever.
 - 🗑️ **One-tap delete** — remove any history item with its little ✕.
-- 🚀 **Auto-start + optional auto-show** — runs at boot and appears when music plays, unless you manually Hide it.
-- 🙈 **Manual Hide / Unhide + window controls** — Hide suppresses media-triggered popups until tray/shortcut Unhide; Minimize and Maximize/Restore are built in.
+- 🚀 **Auto-start + optional auto-show**: runs at boot and appears when music plays, unless you explicitly Hide or Minimize it.
+- 🙈 **Hide, Minimize, restore, and resize**: Hide/Minimize stays in the tray until an explicit summon. Resize horizontally with either edge grip; expand/restore preserves your previous width and dragged position.
 - 🔔 **Update notifications** — checks GitHub Releases and notifies when a new app version is available.
 
 ---
@@ -50,12 +50,16 @@ Most "now playing" widgets only work with one app. This one reads Windows **Syst
 4. **Use volume safely** — click the volume icon only when needed, move the **Vol** slider, then hide it again for a compact widget.
 5. **Read long tracks** — long titles and artist names automatically marquee from right to left when they do not fit.
 6. **Play all** — hit **▶ Play all** to queue the whole list; it auto-advances track to track.
-7. **History** — open the search box: empty can show recently **played** tracks; use **List** to show/hide the list, and switch tabs with **Results** / **History**.
+7. **History**: use **List** to show/hide the list and switch with **Results** / **History**. Results retains the latest completed search independently of history and autocomplete suggestions.
 8. **Repeat / Loop** — 🔁 replays the last track; the loop button repeats the current one endlessly.
 9. **Hide / Unhide** — click ✕ to hide the widget and stop automatic popups while media keeps playing. Use the tray icon or launch shortcut again to Unhide.
-10. **Minimize / Maximize** — use `_` for temporary minimize-to-tray, and the maximize button to toggle a wider widget layout.
+10. **Minimize / Expand**: use `_` to hide to the tray until you summon the widget again. The expand button widens the widget; toggling it again restores the previous width.
 11. **Switch language** — click the tiny `ID/EN` button to switch between English and Indonesian.
 12. **Delete** — click the small ✕ on any history row to remove it.
+
+Drag the left or right edge grip to resize horizontally. A minimum width keeps window and playback controls reachable, and the current monitor's work area bounds the width. Focus a grip and use Left/Right arrows for keyboard resizing. Search and volume panels still determine the height automatically.
+
+Local/YouTube playback owns the displayed title, source, and progress until it finishes or stops; unrelated SMTC events cannot replace that metadata.
 
 ---
 
@@ -108,6 +112,33 @@ This publishes the app, copies `LICENSE`/`README.md` into the payload, creates a
 ```powershell
 dotnet run -c Release
 ```
+### Regression checks (Windows)
+
+```powershell
+powershell -NoProfile -File scripts/regression-window-controls.ps1
+```
+
+The default suite exercises real WPF windows, native geometry, button hit targets, both resize grips, repeated minimize/restore, metadata precedence, stale search completions, and Results/History transitions. It does not run the normal startup path, contact YouTube, alter saved preferences/history, signal an existing widget instance, or stop other processes. CI and the release workflow run this suite before packaging.
+
+For an interactive Windows session with SMTC and media playback available:
+
+```powershell
+powershell -NoProfile -File scripts/regression-window-controls.ps1 -IncludePlayback
+```
+
+This additionally plays temporary synthetic silent WAV files in an owned player, checks track identity and volume across source changes, and cleans up its player/files. It briefly publishes a test SMTC session. Use `-Suite Window` or `-Suite Presentation` to select the offline suites, and `-SnapshotDirectory <path>` for screenshots containing only fixture data.
+
+### Unreleased fixes
+
+- Minimize-to-tray no longer mixes native minimized state with hidden state, and media events cannot undo explicit Hide/Minimize.
+- Window actions use a full-width header; minimum width and bounded horizontal grips prevent clipped controls.
+- Expand/restore retains custom width and position, including the opposite edge at the maximum resize limit.
+- Owned playback metadata is updated directly after loading instead of depending on SMTC feedback.
+- Results, History, suggestions, loading, and errors have separate state; tab/language changes no longer discard results or replace history with a late response.
+- Source changes preserve volume because WPF `MediaPlayer.Close()` resets its native volume to 50%.
+
+An already-running widget is not hot-reloaded by a build. Exit that instance through the tray's **Keluar** menu before launching `bin\Release\net8.0-windows10.0.19041.0\MusicWidget.exe`; launching another copy while it is running only summons the existing instance.
+
 
 ---
 
@@ -145,7 +176,8 @@ The app does not upload history to any service. YouTube search/playback uses you
 | `MainWindow.xaml(.cs)` | UI overlay, search/history, queue, repeat/loop, auto show-hide |
 | `install.ps1` | Developer publish + Startup/Start-Menu shortcuts + yt-dlp update |
 | `scripts/build-installer.ps1` | Release artifact builder: portable ZIP + installer `.exe` |
-| `scripts/regression-window-controls.ps1` | UI Automation smoke test for Hide/Unhide, Minimize, and Maximize/Restore |
+| `scripts/regression-window-controls.ps1` | Isolated WPF/native window and presentation regression runner; optional real playback smoke |
+| `tests/MusicWidget.Regression.csproj` | Windows regression executable with synthetic fixtures and no personal singleton interaction |
 | `installer/MusicWidget.iss` | Inno Setup installer definition |
 | `.github/workflows/ci.yml` | PR/main build and publish smoke test |
 | `.github/workflows/windows-release.yml` | CI workflow for installer artifacts and tag releases |

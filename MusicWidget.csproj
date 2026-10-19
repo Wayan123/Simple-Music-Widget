@@ -13,6 +13,7 @@
     <AssemblyName>MusicWidget</AssemblyName>
     <RootNamespace>MusicWidget</RootNamespace>
     <Version>1.4.0</Version>
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**</DefaultItemExcludes>
     <!-- Lightweight runtime knobs (InvariantGlobalization removed: breaks WPF TextBox input) -->
     <DebuggerSupport>false</DebuggerSupport>
     <EventSourceSupport>false</EventSourceSupport>
