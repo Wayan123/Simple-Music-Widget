@@ -1,0 +1,114 @@
+using System.IO;
+using System.Reflection;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using MusicWidget;
+
+static class Recorder
+{
+    const BindingFlags Flags=BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.DeclaredOnly;
+    static readonly Type T=typeof(MainWindow);
+    static object? Call(MainWindow w,string method,params object?[] args)=>T.GetMethod(method,Flags)!.Invoke(w,args);
+    static void Set(MainWindow w,string name,object value)=>T.GetField(name,Flags)!.SetValue(w,value);
+    static U Find<U>(MainWindow w,string name) where U:class=>w.FindName(name) as U??throw new Exception(name);
+    static void Click(MainWindow w,string name)=>((IInvokeProvider)new ButtonAutomationPeer(Find<Button>(w,name)).GetPattern(PatternInterface.Invoke)!).Invoke();
+    [STAThread] static int Main(string[] args)
+    {
+        var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};
+        var output=args[0];Directory.CreateDirectory(output);
+        var w=new MainWindow();
+        w.Loaded-=(RoutedEventHandler)Delegate.CreateDelegate(typeof(RoutedEventHandler),w,T.GetMethod("OnLoaded",Flags)!);
+        Set(w,"_language",UiLanguage.Id);Call(w,"ApplyLanguage");Set(w,"_userMoved",true);
+        w.Left=80;w.Top=80;w.Topmost=false;
+        var events=new List<object>();
+        var metadata=new List<object>();
+        const int fps=30, width=1120, height=520, total=480;
+        int frame=0;
+        var timer=new DispatcherTimer(DispatcherPriority.Render){Interval=TimeSpan.FromMilliseconds(1000d/fps)};
+        var canvas=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);
+        var bitmap=new RenderTargetBitmap(680,256,192,192,PixelFormats.Pbgra32);
+        var drawing=new DrawingVisual();
+        void Action(string action,string? control,Action invoke)
+        {
+            Point? point=null;
+            if(control is not null)
+            {
+                var element=Find<FrameworkElement>(w,control);
+                var p=element.TranslatePoint(new Point(element.ActualWidth/2,element.ActualHeight/2),w);
+                point=new Point((width-w.ActualWidth*2)/2+p.X*2,(height-w.ActualHeight*2)/2+p.Y*2);
+            }
+            events.Add(new{time=frame/(double)fps,action,control,x=point?.X,y=point?.Y});
+            invoke();
+        }
+        timer.Tick+=(_,_)=>
+        {
+            try
+            {
+                switch(frame)
+                {
+                    case 54: Action("pause","PlayBtn",()=>Click(w,"PlayBtn"));break;
+                    case 84: Action("resume","PlayBtn",()=>Click(w,"PlayBtn"));break;
+                    case 120: Action("show-volume","VolumeToggleBtn",()=>Click(w,"VolumeToggleBtn"));break;
+                    case 150: Action("volume-70","VolumeSlider",()=>Find<Slider>(w,"VolumeSlider").Value=70);break;
+                    case 180: Action("volume-25","VolumeSlider",()=>Find<Slider>(w,"VolumeSlider").Value=25);break;
+                    case 228: Action("hide-volume","VolumeToggleBtn",()=>Click(w,"VolumeToggleBtn"));break;
+                    case 252: Action("expand","MaximizeBtn",()=>Click(w,"MaximizeBtn"));break;
+                    case 300: Action("compact","MaximizeBtn",()=>Click(w,"MaximizeBtn"));break;
+                    case 336: Action("minimize","MinimizeBtn",()=>Click(w,"MinimizeBtn"));break;
+                    case 369: Action("restore",null,()=>w.SummonFromTray());break;
+                    case 411: Action("close-search","SearchBtn",()=>Click(w,"SearchBtn"));break;
+                }
+                Call(w,"OnTick",null,EventArgs.Empty);
+                w.UpdateLayout();canvas.Clear();
+                using(var context=drawing.RenderOpen())
+                {
+                    if(w.IsVisible)
+                    {
+                        int bw=(int)Math.Ceiling(w.ActualWidth*2),bh=(int)Math.Ceiling(w.ActualHeight*2);
+                        if(bitmap.PixelWidth!=bw||bitmap.PixelHeight!=bh)bitmap=new RenderTargetBitmap(bw,bh,192,192,PixelFormats.Pbgra32);
+                        bitmap.Clear();bitmap.Render(w);
+                        context.DrawImage(bitmap,new Rect((width-bw)/2d,(height-bh)/2d,bw,bh));
+                    }
+                }
+                canvas.Render(drawing);
+                var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(canvas));
+                using(var file=File.Create(Path.Combine(output,$"{frame:D5}.png")))encoder.Save(file);
+                metadata.Add(new{frame,time=frame/(double)fps,visible=w.IsVisible,width=w.ActualWidth,height=w.ActualHeight});
+                frame++;
+                if(frame==total)
+                {
+                    timer.Stop();File.WriteAllText(Path.Combine(output,"events.json"),JsonSerializer.Serialize(events));
+                    File.WriteAllText(Path.Combine(output,"frames.json"),JsonSerializer.Serialize(metadata));
+                    Console.WriteLine($"CAPTURED {frame} real WPF frames, {fps}fps, {width}x{height}; actual LocalPlayer and controls; no personal desktop/history.");
+                    app.Shutdown();
+                }
+            }
+            catch(Exception e){timer.Stop();Console.Error.WriteLine(e);Environment.ExitCode=1;app.Shutdown();}
+        };
+        RoutedEventHandler? ready=null;
+        ready=async(_,_)=>
+        {
+            w.Loaded-=ready;
+            try
+            {
+                Find<Slider>(w,"VolumeSlider").Value=50;
+                await (Task)Call(w,"PlayLocalFileAsync",args[1])!;
+                var player=(LocalPlayer)T.GetField("_local",Flags)!.GetValue(w)!;
+                var deadline=DateTime.UtcNow.AddSeconds(8);
+                while(player.Duration.TotalSeconds<30&&DateTime.UtcNow<deadline)await Task.Delay(30);
+                if(!player.IsPlaying||player.Duration.TotalSeconds<30)throw new Exception("Original demo WAV did not enter actual playback");
+                timer.Start();
+            }
+            catch(Exception e){Console.Error.WriteLine(e);Environment.ExitCode=1;app.Shutdown();}
+        };
+        w.Loaded+=ready;
+        app.Run(w);
+        return Environment.ExitCode;
+    }
+}
