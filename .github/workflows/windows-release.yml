@@ -27,6 +27,10 @@ jobs:
         shell: pwsh
         run: choco install innosetup -y --no-progress
 
+      - name: Window and presentation regression
+        shell: pwsh
+        run: ./scripts/regression-window-controls.ps1
+
       - name: Build installer
         shell: pwsh
         run: ./scripts/build-installer.ps1 -SelfContained

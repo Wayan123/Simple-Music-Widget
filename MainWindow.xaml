@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Music Widget"
         Icon="icon.ico"
-        Width="340" SizeToContent="Height"
-        WindowStyle="None" ResizeMode="NoResize"
+        Width="340" MinWidth="340" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="CanResize"
         AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False"
         MouseLeftButtonDown="OnDrag" SizeChanged="OnSizeChanged">
@@ -81,13 +81,62 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="HorizontalResizeGrip" TargetType="Thumb">
+            <Setter Property="Cursor" Value="SizeWE"/>
+            <Setter Property="Focusable" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="Transparent">
+                            <Border x:Name="mark" Width="2" Height="20" CornerRadius="1"
+                                    Background="#777777" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="mark" Property="Background" Value="#1DB954"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="mark" Property="Background" Value="#F2F2F2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
+    <Grid>
     <Border CornerRadius="12" Background="#E6202020" Padding="12">
         <Border.Effect>
             <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.5" Color="Black"/>
         </Border.Effect>
         <StackPanel>
+                <!-- Source + actions -->
+                <Grid Grid.Row="0" Margin="0,0,0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="Source" Grid.Column="0" Text="Music" Foreground="#9A9A9A" FontSize="11"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,4,0"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="LangBtn" Style="{StaticResource TextBtn}" Content="ID"
+                                ToolTip="Switch language" Click="OnToggleLanguage"/>
+                        <Button x:Name="SearchBtn" Style="{StaticResource IconBtn}" Content="&#xE721;"
+                                ToolTip="Search YouTube" Click="OnToggleSearch"/>
+                        <Button x:Name="OpenBtn" Style="{StaticResource IconBtn}" Content="&#xE8E5;"
+                                ToolTip="Open local media file" Click="OnOpenFile"/>
+                        <Button x:Name="MinimizeBtn" AutomationProperties.AutomationId="MinimizeBtn"
+                                Style="{StaticResource IconBtn}" Content="&#xE921;"
+                                ToolTip="Minimize" Click="OnMinimize"/>
+                        <Button x:Name="MaximizeBtn" AutomationProperties.AutomationId="MaximizeBtn"
+                                Style="{StaticResource IconBtn}" Content="&#xE922;"
+                                ToolTip="Maximize" Click="OnToggleMaximize"/>
+                        <Button x:Name="HideBtn" AutomationProperties.AutomationId="HideBtn"
+                                Style="{StaticResource IconBtn}" Content="&#xE711;"
+                                ToolTip="Hide until unhide" Click="OnHide"/>
+                    </StackPanel>
+                </Grid>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="64"/>
@@ -115,39 +164,12 @@
             <Grid Grid.Column="1" Margin="12,0,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Source + actions -->
-                <Grid Grid.Row="0" Margin="0,0,0,2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock x:Name="Source" Grid.Column="0" Text="Music" Foreground="#9A9A9A" FontSize="11"
-                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,4,0"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="LangBtn" Style="{StaticResource TextBtn}" Content="ID"
-                                ToolTip="Switch language" Click="OnToggleLanguage"/>
-                        <Button x:Name="SearchBtn" Style="{StaticResource IconBtn}" Content="&#xE721;"
-                                ToolTip="Search YouTube" Click="OnToggleSearch"/>
-                        <Button x:Name="OpenBtn" Style="{StaticResource IconBtn}" Content="&#xE8E5;"
-                                ToolTip="Open local media file" Click="OnOpenFile"/>
-                        <Button x:Name="MinimizeBtn" AutomationProperties.AutomationId="MinimizeBtn"
-                                Style="{StaticResource IconBtn}" Content="&#xE921;"
-                                ToolTip="Minimize" Click="OnMinimize"/>
-                        <Button x:Name="MaximizeBtn" AutomationProperties.AutomationId="MaximizeBtn"
-                                Style="{StaticResource IconBtn}" Content="&#xE922;"
-                                ToolTip="Maximize" Click="OnToggleMaximize"/>
-                        <Button x:Name="HideBtn" AutomationProperties.AutomationId="HideBtn"
-                                Style="{StaticResource IconBtn}" Content="&#xE711;"
-                                ToolTip="Hide until unhide" Click="OnHide"/>
-                    </StackPanel>
-                </Grid>
 
                 <!-- Title + artist (auto-marquee when text overflows) -->
-                <StackPanel Grid.Row="1">
+                <StackPanel Grid.Row="0">
                     <Border x:Name="TitleViewport" ClipToBounds="True" Height="20">
                         <TextBlock x:Name="TitleText" Text="No media playing"
                                    Foreground="#F5F5F5" FontSize="14" FontWeight="SemiBold"
@@ -169,7 +191,7 @@
                 </StackPanel>
 
                 <!-- Progress + controls -->
-                <Grid Grid.Row="2" VerticalAlignment="Bottom">
+                <Grid Grid.Row="1" VerticalAlignment="Bottom">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -272,4 +294,13 @@
         </StackPanel>
         </StackPanel>
     </Border>
+        <Thumb x:Name="LeftResizeGrip" Style="{StaticResource HorizontalResizeGrip}"
+               Width="8" HorizontalAlignment="Left" AutomationProperties.Name="Resize left edge"
+               DragStarted="OnResizeStarted" DragDelta="OnResizeDelta" DragCompleted="OnResizeCompleted"
+               KeyDown="OnResizeKey"/>
+        <Thumb x:Name="RightResizeGrip" Style="{StaticResource HorizontalResizeGrip}"
+               Width="8" HorizontalAlignment="Right" AutomationProperties.Name="Resize right edge"
+               DragStarted="OnResizeStarted" DragDelta="OnResizeDelta" DragCompleted="OnResizeCompleted"
+               KeyDown="OnResizeKey"/>
+    </Grid>
 </Window>

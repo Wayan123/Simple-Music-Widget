@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -42,8 +43,9 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private double _durationSec;
     private bool _autoStart;
-    private bool _manualHide;      // true after Hide: suppress all media-triggered auto-show until user unhides
+    private bool _manualHide;      // Hide and Minimize both suppress auto-show until an explicit summon
     private bool _isExpanded;
+    private double _widthBeforeExpand = CompactWidgetWidth;
 
     // Queue of tracks to auto-advance through; index of the current track.
     private readonly List<YtResult> _queue = new();
@@ -53,6 +55,12 @@ public partial class MainWindow : Window
     private bool _ownedPlaybackActive; // local/YouTube playback started by this widget
     private int _playGeneration;    // ignores stale async YouTube/local load completions
     private int _searchGeneration;  // ignores stale YouTube search completions
+    private enum ListView { Results, Suggestions, History }
+    private ListView _listView;
+    private IReadOnlyList<YtResult> _searchResults = Array.Empty<YtResult>();
+    private bool _hasSearched;
+    private bool _searchPending;
+    private string? _searchError;
     private bool _updatingVolumeUi; // prevents slider sync from setting volume recursively
     private double _widgetVolume = 1.0; // persisted slider value for the widget-owned player
     private UiLanguage _language = LoadLanguage();
@@ -64,6 +72,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        TitleText.Tag = TitleText.Text;
+        ArtistText.Tag = ArtistText.Text;
         ApplyLanguage();
         // Boot auto-start (from Startup shortcut) stays hidden until music; manual launch shows now.
         _autoStart = Environment.GetCommandLineArgs().Any(a =>
@@ -77,6 +87,7 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        Loaded -= OnLoaded;
         PositionNearTray();
         _tray = new TrayIcon(onShow: SummonWidget, onHide: HideManually, onExit: () => System.Windows.Application.Current.Shutdown());
         if (_autoStart) Hide();          // boot: wait for music
@@ -154,10 +165,12 @@ public partial class MainWindow : Window
         LangBtn.ToolTip = IsIndonesian ? "Switch to English" : "Ganti ke Bahasa Indonesia";
         SearchBtn.ToolTip = Text("Search YouTube", "Cari YouTube");
         OpenBtn.ToolTip = Text("Open local media file", "Buka file media lokal");
-        MinimizeBtn.ToolTip = Text("Minimize", "Minimize");
+        MinimizeBtn.ToolTip = Text("Minimize to tray", "Minimize ke tray");
         MaximizeBtn.ToolTip = _isExpanded
             ? Text("Restore compact size", "Kembalikan ukuran kecil")
             : Text("Maximize widget width", "Perbesar widget");
+        System.Windows.Automation.AutomationProperties.SetName(LeftResizeGrip, Text("Resize left edge", "Ubah ukuran sisi kiri"));
+        System.Windows.Automation.AutomationProperties.SetName(RightResizeGrip, Text("Resize right edge", "Ubah ukuran sisi kanan"));
         HideBtn.ToolTip = Text("Hide until unhide from tray", "Sembunyikan sampai di-unhide dari tray");
         RepeatBtn.ToolTip = Text("Repeat last track", "Putar ulang lagu terakhir");
         LoopBtn.ToolTip = Text("Loop this track", "Loop lagu ini");
@@ -169,6 +182,7 @@ public partial class MainWindow : Window
         PlayAllBtn.Content = Text("\u25B6 Play all", "\u25B6 Putar semua");
         PlayAllBtn.ToolTip = Text("Play all from the list", "Putar semua dari daftar");
         UpdateResultsToggleText();
+        RefreshList();
         QueueMarqueeUpdate();
     }
 
@@ -177,10 +191,6 @@ public partial class MainWindow : Window
         _language = IsIndonesian ? UiLanguage.En : UiLanguage.Id;
         SaveLanguage();
         ApplyLanguage();
-
-        // Refresh lightweight suggestion/history labels after language changes.
-        if (SearchPanel.Visibility == Visibility.Visible && Results.Items.Count > 0)
-            ShowSuggestions(SearchBox.Text);
     }
 
     private async System.Threading.Tasks.Task CheckUpdatesAsync()
@@ -215,9 +225,9 @@ public partial class MainWindow : Window
 
     private void Render(MediaSnapshot s)
     {
-        // Manual Hide is a user override: playback events must not pop the widget up again.
-        // Keep UI data fresh while hidden so an explicit Unhide immediately shows current media.
+        // Explicit Hide/Minimize takes precedence over media-triggered visibility changes.
         var suppressAutoShow = _manualHide;
+        if (_ownedPlaybackActive) return;
 
         // Auto-hide when nothing is playing (unless searching or our own queue is active).
         if (!s.HasSession)
@@ -233,12 +243,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!IsVisible && !suppressAutoShow)
-        {
-            _userMoved = false;
-            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        if (!IsVisible && !suppressAutoShow && s.IsPlaying)
             Show();
-        }
         else if (IsVisible && suppressAutoShow)
         {
             Hide();
@@ -266,6 +272,7 @@ public partial class MainWindow : Window
     private void SetMarqueeText(TextBlock textBlock, string? text, ref string? previousKey)
     {
         var value = text ?? "";
+        if (textBlock.Tag as string == value) return;
         textBlock.Tag = value;
         textBlock.Text = value;
         previousKey = null;
@@ -352,8 +359,9 @@ public partial class MainWindow : Window
     // Lightweight 500ms poll keeps the progress bar moving between SMTC events.
     private void OnTick(object? sender, EventArgs e)
     {
-        if (_ownedPlaybackActive && _local is not null)
+        if (_ownedPlaybackActive)
         {
+            if (_local is null) return;
             PlayBtn.Content = _local.IsPlaying ? "\uE769" : "\uE768";
             if (_local.Duration.TotalSeconds > 0) _durationSec = _local.Duration.TotalSeconds;
             UpdateProgress(_local.Position.TotalSeconds);
@@ -375,14 +383,14 @@ public partial class MainWindow : Window
 
     private async void OnPrev(object sender, RoutedEventArgs e)
     {
-        if (_queueIndex > 0) { _queueIndex -= 2; PlayNextInQueue(); return; }
+        if (_ownedPlaybackActive && _queueIndex > 0) { _queueIndex -= 2; PlayNextInQueue(); return; }
         if (_ownedPlaybackActive && _local is not null) { _local.Restart(); return; }
         await _media.PreviousAsync();
     }
 
     private async void OnNext(object sender, RoutedEventArgs e)
     {
-        if (_queueIndex >= 0 && _queueIndex + 1 < _queue.Count) { PlayNextInQueue(); return; }
+        if (_ownedPlaybackActive && _queueIndex >= 0 && _queueIndex + 1 < _queue.Count) { PlayNextInQueue(); return; }
         if (_ownedPlaybackActive && _local is not null) { _playGeneration++; _local.Stop(); _ownedPlaybackActive = false; _queueActive = false; return; }
         await _media.NextAsync();
     }
@@ -390,24 +398,26 @@ public partial class MainWindow : Window
     // Bring the widget up on demand (from tray), opening search so it's usable when idle.
     private void SummonWidget()
     {
-        _manualHide = false;  // explicit tray/shortcut summon is the Unhide action
-        _userMoved = false;   // a deliberate summon re-homes the widget to the tray corner
-        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        _manualHide = false;
         Show();
+        // A native/system minimize must be restored only after the HWND is visible.
+        if (WindowState != WindowState.Normal) WindowState = WindowState.Normal;
         // Defer panel-open to after layout so SizeToContent grows the window reliably.
         _ = Dispatcher.BeginInvoke(new Action(() =>
         {
+            if (_manualHide || !IsVisible) return;
             if (SearchPanel.Visibility != Visibility.Visible)
             {
                 SearchPanel.Visibility = Visibility.Visible;
                 Results.Visibility = Visibility.Collapsed;
                 UpdateResultsToggleText();
                 SearchBox.Focus();
-                ShowSuggestions(SearchBox.Text);
+                RefreshList();
             }
             Activate();
             UpdateVolumeDisplay();
-            PositionNearTray();
+            if (_userMoved) ClampOnScreen();
+            else PositionNearTray();
         }), DispatcherPriority.Loaded);
     }
 
@@ -422,18 +432,15 @@ public partial class MainWindow : Window
 
     private void OnHide(object sender, RoutedEventArgs e) => HideManually();
 
-    private void OnMinimize(object sender, RoutedEventArgs e)
-    {
-        // Minimize is temporary: unlike manual Hide, media events may show the widget again.
-        _manualHide = false;
-        WindowState = WindowState.Minimized;
-        Hide();
-    }
+    private void OnMinimize(object sender, RoutedEventArgs e) => HideManually();
 
     private void OnToggleMaximize(object sender, RoutedEventArgs e)
     {
         _isExpanded = !_isExpanded;
-        Width = _isExpanded ? ExpandedWidgetWidth : CompactWidgetWidth;
+        if (_isExpanded) _widthBeforeExpand = ActualWidth;
+        Width = _isExpanded
+            ? Math.Min(GetWorkArea().Width - 24, Math.Max(ExpandedWidgetWidth, _widthBeforeExpand + 180))
+            : _widthBeforeExpand;
         MaximizeBtn.Content = _isExpanded ? "\uE923" : "\uE922"; // restore : maximize
         MaximizeBtn.ToolTip = _isExpanded
             ? Text("Restore compact size", "Kembalikan ukuran kecil")
@@ -454,22 +461,33 @@ public partial class MainWindow : Window
             Filter = LocalPlayer.OpenDialogFilter
         };
         if (dlg.ShowDialog() != true) return;
+        await PlayLocalFileAsync(dlg.FileName);
+    }
+
+    private async System.Threading.Tasks.Task PlayLocalFileAsync(string path)
+    {
 
         var generation = ++_playGeneration;
         _queue.Clear(); _queueIndex = -1; _queueActive = false;  // local file is standalone
         _ownedPlaybackActive = true;
         _durationSec = 0;
+        Progress.Value = 0;
         Art.Source = null;
         SetTitleText(Text("Loading local file...", "Memuat file lokal..."));
-        SetArtistText(System.IO.Path.GetFileName(dlg.FileName));
+        SetArtistText(Path.GetFileName(path));
         Source.Text = Text("Local file", "File lokal");
         QueueMarqueeUpdate();
         try
         {
             var pl = EnsurePlayer();
             if (pl is null) { HandleOwnedPlaybackFailure(Text("Player unavailable", "Pemutar tidak tersedia")); return; }
-            await pl.PlayFileAsync(dlg.FileName);
+            await pl.PlayFileAsync(path);
             if (generation != _playGeneration) return;
+            if (!_ownedPlaybackActive) return;
+            SetTitleText(Path.GetFileNameWithoutExtension(path));
+            SetArtistText("");
+            Source.Text = Text("Local file", "File lokal");
+            PlayBtn.Content = pl.IsPlaying ? "\uE769" : "\uE768";
         }
         catch (Exception ex) { if (generation == _playGeneration) HandleOwnedPlaybackFailure(ex.Message); }
     }
@@ -494,12 +512,47 @@ public partial class MainWindow : Window
         if (e.ButtonState != MouseButtonState.Pressed) return;
         DragMove();
         _userMoved = true;
+        ClampOnScreen();
+    }
+
+    private void OnResizeStarted(object sender, DragStartedEventArgs e) => _userMoved = true;
+
+    private void OnResizeDelta(object sender, DragDeltaEventArgs e)
+    {
+        ResizeHorizontally(ReferenceEquals(sender, LeftResizeGrip), e.HorizontalChange);
+        e.Handled = true;
+    }
+
+    private void OnResizeCompleted(object sender, DragCompletedEventArgs e) => ClampOnScreen();
+
+    private void OnResizeKey(object sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Left or Key.Right)) return;
+        ResizeHorizontally(ReferenceEquals(sender, LeftResizeGrip), e.Key == Key.Left ? -16 : 16);
+        e.Handled = true;
+    }
+
+    private void ResizeHorizontally(bool leftEdge, double delta)
+    {
+        _userMoved = true;
+        var wa = GetWorkArea();
+        if (leftEdge)
+        {
+            var right = Left + ActualWidth;
+            var minLeft = Math.Max(wa.Left, right - MaxWidth);
+            var left = Math.Clamp(Left + delta, minLeft, Math.Max(minLeft, right - MinWidth));
+            Width = right - left;
+            Left = left;
+        }
+        else Width = Math.Clamp(ActualWidth + delta, MinWidth, Math.Max(MinWidth, wa.Right - Left));
     }
 
     // Window height changes (search panel, results filling in, tab switches) must never push
     // content off-screen. Re-anchor on every size change so the bottom stays on-screen.
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
+        if (WindowState != WindowState.Normal) return;
+        MaxWidth = Math.Max(MinWidth, GetWorkArea().Width - 24);
         if (_userMoved) ClampOnScreen();
         else PositionNearTray();
     }
@@ -518,7 +571,7 @@ public partial class MainWindow : Window
             Results.Visibility = Visibility.Collapsed;
             UpdateResultsToggleText();
             SearchBox.Focus();
-            ShowSuggestions(SearchBox.Text);
+            RefreshList();
         }
     }
 
@@ -533,11 +586,13 @@ public partial class MainWindow : Window
     {
         if (_suppressTextChange) return;
         _searchGeneration++;
+        _searchPending = false;
         ShowSuggestions(SearchBox.Text);
     }
 
     private void ShowSuggestions(string prefix)
     {
+        _listView = ListView.Suggestions;
         prefix = prefix.Trim();
         Results.Items.Clear();
         if (prefix.Length == 0)
@@ -551,52 +606,88 @@ public partial class MainWindow : Window
             Results.Items.Add(new PlayerItem { Display = "\uE721 " + q, Query = q, Deletable = true, Subtitle = Text("Saved search", "Pencarian tersimpan") });
     }
 
+    private void RefreshList()
+    {
+        switch (_listView)
+        {
+            case ListView.Results: ShowSearchResults(); break;
+            case ListView.History: ShowPlayedHistory(); break;
+            default: ShowSuggestions(SearchBox.Text); break;
+        }
+    }
+
+    private void ShowSearchResults()
+    {
+        _listView = ListView.Results;
+        Results.Items.Clear();
+        if (_searchPending)
+            Results.Items.Add(new PlayerItem { Display = Text("Searching...", "Mencari...") });
+        else if (_searchError is not null)
+            Results.Items.Add(new PlayerItem { Display = Text("YouTube search failed", "Gagal mencari YouTube"), Subtitle = _searchError });
+        else if (_searchResults.Count == 0)
+            Results.Items.Add(new PlayerItem { Display = _hasSearched
+                ? Text("No results", "Tidak ada hasil")
+                : Text("Enter a query to search YouTube", "Masukkan kata kunci untuk mencari YouTube") });
+        else
+            foreach (var hit in _searchResults)
+                Results.Items.Add(new PlayerItem { Display = hit.Title, Track = hit,
+                    Subtitle = Text("YouTube • music template preview", "YouTube • preview template musik") });
+    }
+
     private async void DoSearch()
     {
         var q = SearchBox.Text.Trim();
         if (q.Length == 0) return;
         var generation = ++_searchGeneration;
         HistoryStore.AddSearch(q);
-        Results.Items.Clear();
-        Results.Items.Add(new PlayerItem { Display = Text("Searching...", "Mencari..."), Deletable = false });
+        _searchPending = true;
+        _hasSearched = true;
+        _searchError = null;
+        Results.Visibility = Visibility.Visible;
+        UpdateResultsToggleText();
+        ShowSearchResults();
         try
         {
             var hits = await YouTubeService.SearchAsync(q);
-            if (generation != _searchGeneration) return;
-            Results.Visibility = Visibility.Visible;
-            UpdateResultsToggleText();
-            Results.Items.Clear();
-            if (hits.Count == 0) { Results.Items.Add(new PlayerItem { Display = Text("No results", "Tidak ada hasil") }); return; }
-            foreach (var h in hits)
-                Results.Items.Add(new PlayerItem { Display = h.Title, Track = h, Deletable = false, Subtitle = Text("YouTube • music template preview", "YouTube • preview template musik") });
+            CompleteSearch(generation, hits, null);
         }
         catch (Exception ex)
         {
-            if (generation != _searchGeneration) return;
-            Results.Visibility = Visibility.Visible;
-            UpdateResultsToggleText();
-            Results.Items.Clear();
-            Results.Items.Add(new PlayerItem { Display = Text("YouTube search failed", "Gagal mencari YouTube"), Subtitle = ex.Message });
-            SetArtistText(ex.Message);
+            CompleteSearch(generation, Array.Empty<YtResult>(), ex.Message);
         }
+    }
+
+    private void CompleteSearch(int generation, IReadOnlyList<YtResult> hits, string? error)
+    {
+        if (generation != _searchGeneration) return;
+        _searchPending = false;
+        _hasSearched = true;
+        _searchResults = hits;
+        _searchError = error;
+        if (_listView == ListView.Results) ShowSearchResults();
     }
 
     private void OnTabResults(object sender, RoutedEventArgs e)
     {
-        _searchGeneration++;
         Results.Visibility = Visibility.Visible;
         UpdateResultsToggleText();
-        ShowSuggestions(SearchBox.Text);
+        ShowSearchResults();
+    }
+
+    private void ShowPlayedHistory()
+    {
+        _listView = ListView.History;
+        Results.Items.Clear();
+        foreach (var t in HistoryStore.Played)
+            Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true,
+                Subtitle = Text("YouTube • music template", "YouTube • template musik") });
     }
 
     private void OnTabPlayed(object sender, RoutedEventArgs e)
     {
-        _searchGeneration++;
         Results.Visibility = Visibility.Visible;
         UpdateResultsToggleText();
-        Results.Items.Clear();
-        foreach (var t in HistoryStore.Played)
-            Results.Items.Add(new PlayerItem { Display = "\u266A " + t.Title, Track = t, Deletable = true, Subtitle = Text("YouTube • music template", "YouTube • template musik") });
+        ShowPlayedHistory();
     }
 
     // Pick a row: play a track, or run a stored search query.
@@ -659,6 +750,7 @@ public partial class MainWindow : Window
         _queueActive = true;
         _ownedPlaybackActive = true;
         _durationSec = 0;            // reset so progress bar starts fresh for the new track
+        Progress.Value = 0;
         Art.Source = null;           // show the built-in music template instead of stale art
         HistoryStore.AddPlayed(r);
         SetTitleText(Text("Loading...", "Memuat...")); SetArtistText(r.Title); Source.Text = "YouTube";
@@ -673,6 +765,11 @@ public partial class MainWindow : Window
             if (pl is null) { HandleTrackLoadFailure(Text("Player unavailable", "Pemutar tidak tersedia")); return; }
             await pl.PlayStreamAsync(url, r.Title, "YouTube");
             if (generation != _playGeneration) return;
+            if (!_ownedPlaybackActive) return;
+            SetTitleText(r.Title);
+            SetArtistText("YouTube");
+            Source.Text = "YouTube";
+            PlayBtn.Content = pl.IsPlaying ? "\uE769" : "\uE768";
         }
         catch (Exception ex)
         {
@@ -694,7 +791,7 @@ public partial class MainWindow : Window
         {
             if (item.Query is not null) HistoryStore.RemoveSearch(item.Query);
             else if (item.Track is not null) HistoryStore.RemovePlayed(item.Track.Id);
-            Results.Items.Remove(item);
+            RefreshList();
             e.Handled = true;
         }
     }
@@ -716,7 +813,7 @@ public partial class MainWindow : Window
     private void OnToggleResults(object sender, RoutedEventArgs e)
     {
         Results.Visibility = Results.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-        if (Results.Visibility == Visibility.Visible && Results.Items.Count == 0) ShowSuggestions(SearchBox.Text);
+        if (Results.Visibility == Visibility.Visible) RefreshList();
         UpdateResultsToggleText();
     }
 
@@ -771,12 +868,23 @@ public partial class MainWindow : Window
         finally { _updatingVolumeUi = false; }
     }
 
+    private Rect GetWorkArea()
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero) return SystemParameters.WorkArea;
+        var area = System.Windows.Forms.Screen.FromHandle(hwnd).WorkingArea;
+        var source = HwndSource.FromHwnd(hwnd);
+        var transform = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+        return new Rect(transform.Transform(new Point(area.Left, area.Top)),
+                        transform.Transform(new Point(area.Right, area.Bottom)));
+    }
+
     // Park the widget at bottom-right, just above the taskbar. Uses ActualHeight because
     // SizeToContent leaves Height = NaN; if content is taller than the space above the
     // taskbar, grow upward (clamp Top to the work area) so the bottom is never clipped.
     private void PositionNearTray()
     {
-        var wa = SystemParameters.WorkArea;
+        var wa = GetWorkArea();
         Left = wa.Right - ActualWidth - 12;
         Top = Math.Max(wa.Top, wa.Bottom - ActualHeight - 12);
     }
@@ -785,10 +893,8 @@ public partial class MainWindow : Window
     // push the bottom (or top) past the work area edges.
     private void ClampOnScreen()
     {
-        var wa = SystemParameters.WorkArea;
-        if (Top + ActualHeight > wa.Bottom) Top = wa.Bottom - ActualHeight;
-        if (Top < wa.Top) Top = wa.Top;
-        if (Left + ActualWidth > wa.Right) Left = wa.Right - ActualWidth;
-        if (Left < wa.Left) Left = wa.Left;
+        var wa = GetWorkArea();
+        Top = Math.Clamp(Top, wa.Top, Math.Max(wa.Top, wa.Bottom - ActualHeight));
+        Left = Math.Clamp(Left, wa.Left, Math.Max(wa.Left, wa.Right - ActualWidth));
     }
 }
