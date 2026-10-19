@@ -2,12 +2,12 @@
 workflow: product-launch-video
 flow: automation
 storyboard: no
-message: Kontrol musik dari widget kecil tanpa meninggalkan pekerjaan.
+message: Find a YouTube track and control it without leaving your work.
 destination: Instagram Reels, Threads, TikTok, YouTube Shorts, GitHub README
-language: id
-audience: Pengguna Windows yang mendengarkan musik saat bekerja
-angle: Bukti lewat interaksi aplikasi nyata, bukan mockup
-length: 20-24 seconds
+language: en
+audience: Windows users who listen to music while working
+angle: Real live search and advancing playback, not simulated results
+length: 30-36 seconds
 ---
 
 # Simple Music Widget demo
@@ -16,21 +16,21 @@ length: 20-24 seconds
 
 - Looping GIF embedded in the repository README.
 - Four individually titled MP4 exports for Instagram, Threads, TikTok, and YouTube Shorts.
-- A separate Indonesian caption for each platform.
+- A separate English caption for each platform, with required music attribution.
 
 ## Production decisions
 
 - Keep the application unchanged. Charcoal and emerald staging follows the existing widget palette.
-- Record the real WPF MainWindow and LocalPlayer with an original demo WAV. No personal desktop, history, account, or browser content enters the footage.
-- Show actual play/pause, volume changes, expanded/compact sizing, minimize, and explicit restore.
-- Use local rendering, original procedural instrumental audio, and readable on-screen Indonesian copy. No synthetic voice, cloud media service, or automatic publishing.
+- Record the real WPF MainWindow searching YouTube and playing the official licensed upload of Hiraeth by Scott Buckley. No personal desktop, history list, account, or browser content enters the footage.
+- Show typing, actual search results, selecting a real result, advancing playback, play/pause, volume changes, expanded/compact sizing, minimize, and explicit restore.
+- Use local rendering and English on-screen copy and UI. Intro music is original; the later music is a licensed edited Hiraeth excerpt, not live system audio. No synthetic voice, cloud media service, or automatic social posting.
 - Instagram/TikTok/Shorts: 1080x1920. Threads: 1080x1350. Recompose the feed layout; do not crop text from the vertical cut.
-- GIF: a lightweight landscape product demonstration, silent by format.
-- CTA names the real GitHub repository. Captions link the demonstrated fix branch; do not imply an unreleased build is already the latest public installer.
+- GIF: 960x640, 30-second silent looping demonstration.
+- CTA names the real GitHub repository on main. Do not imply an unreleased build is the latest public installer.
 
 ## Source and rights
 
-Application and icon: this repository, MIT. Demo recording: produced for this request. Music: original seeded synthesis, not a commercial recording. Text fonts: local Liberation Sans with its bundled license.
+Application and icon: this repository, MIT. Intro music: original seeded synthesis. Hiraeth: Scott Buckley, CC BY 4.0, verified at https://www.scottbuckley.com.au/library/hiraeth/ . Its edited excerpt is normalized and faded; descriptions must retain attribution. Text fonts: local Liberation Sans with its bundled license.
 
 ## Execution
 

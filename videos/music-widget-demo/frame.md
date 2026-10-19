@@ -1,20 +1,26 @@
-# Music Widget — social demo
+# Music Widget — English YouTube demo
 
 ## Video direction
-Original composition, not a copied frame preset. Charcoal #101914 background, emerald #1DB954 accent, ivory #F5F5F5 primary text, muted #B5B5B5 secondary text. Local Demo Sans regular/bold (Liberation Sans; license in assets). One actual application recording remains the hero. Brand icon appears with the title, not as unrelated decoration. No fake reviews, counters, download totals, reconstructed player controls, or personal desktop footage.
+Preserve the charcoal/emerald product stage, local Demo Sans fonts, and actual WPF widget. All visible promotional copy and recorded application UI are English. No fabricated rows, title substitutions, fake progress, personal desktop, history-list footage, download counts, or reviews.
 
-Compositions: Instagram 1080×1920/24 s; TikTok 1080×1920/22 s; YouTube Shorts 1080×1920/23 s; Threads 1080×1350/20 s; README 960×540/18 s. Important text stays within horizontal 80–920 on portrait and above the bottom 20%. Static charcoal/green stage behind the app; no unrelated motion.
+Outputs: Instagram 1080×1920/36 s; TikTok 1080×1920/34 s; YouTube Shorts 1080×1920/35 s; Threads 1080×1350/33 s; README 960×640/30 s. The taller source canvas accommodates the real search results without cutting off the list. Camera scale follows actual width changes; it is wider during search and expanded mode, closer in compact mode. Do not crop any window controls.
 
-Motion is seek-safe GSAP on a paused registered timeline. Text appears with short fade/rise, then holds. Camera zooms out only while the actual app expands, preserving its identity. A short ring marks actual invoked controls; it is an editorial annotation, not a recorded cursor. No narration. An original instrumental soundtrack is used with soft entry/exit; it is promotional background music, not a synchronized recording of the player's output. GIF is silent.
+One paused registered GSAP timeline per composition. The actual recording is 28 seconds at 15 fps; social exports are 30 fps, GIF 15 fps. Intro and final holds differ by platform. Brief rise/fade text entrances and editorial rings at recorded control coordinates; no unrelated floating motion.
 
-## Shot sequence (relative to demo start)
-- Opening: platform-specific Indonesian hook; title and icon; readable held introduction.
-- 0–4 s: real playback, pause and resume. Label: “Putar & jeda”.
-- 4–8.4 s: real volume panel and slider changes. Label: “Atur volume”.
-- 8.4–11.2 s: real width expansion and return to compact size. Reframe to retain both edges. Label: “Lebarkan saat perlu”.
-- 11.2–12.3 s: app genuinely hides; source is transparent. Label: “Sembunyikan sementara”. No fake tray is drawn.
-- 12.3–16 s: actual SummonFromTray restores the window; search opens and closes. Label: “Tampilkan lagi”. Restore is invoked programmatically through the app's tray entry point; no tray click is claimed.
-- Ending: held app still plus “Gratis. Open source. Windows.” and the repository name. CTA points to the window-fix branch in the written caption; it does not claim a new default release.
+## Shot sequence (relative to the source recording)
+- 0–2 s: the English app appears; open search at 1 s. “Open YouTube search”.
+- 2–5 s: type “Scott Buckley Hiraeth”. “Type a song or artist”. Autocomplete is suppressed only to exclude personal saved suggestions.
+- 5–9 s: invoke the real search; show actual results returned by YouTube. Waits longer than the readable searching beat are omitted, not replaced with results.
+- 9–11 s: select the actual official result XPZL2yFOeA8; show the application's real loading/buffering state. Continue only after the real stream has a duration and advancing position.
+- 11–16 s: “Play. Pause. Resume.” Pause at 13 s, resume at 14 s.
+- 16–20 s: “Set your volume”. Show the panel at 16 s, set 40% at 17 s, hide it at 19 s.
+- 20–23 s: “Compact or expanded”. Real restore, expand, restore at 20, 21, 22 s. Zoom out before expansion and back in after compacting.
+- 23–24.333 s: “Hide to the tray”. The real window is hidden; transparent footage remains transparent.
+- 24.333–27 s: “Bring it back”. Invoke the real tray restore entry point. Clear the query and close the search panel at 26 s, leaving real playback visible.
+- Ending (from 27 s): cut to a readable freeze of actual expanded playback, source frame 320 (21⅓ s), rather than freezing a blank phase of the title's marquee. This is an editorial closing card, not the final live window state. Hold “Free. Open source. Windows.” plus the repository/setup-guide CTA.
 
-## Disclosure
-Footage is captured directly from the installed WPF assembly, driven by its actual controls with an original local WAV. Normal startup is bypassed to avoid displaying the user's history or launching background services. No search results or metadata integrations are fabricated; these are not featured in this recording.
+## Sound and rights
+No narration. An original intro bed transitions to an edited, licensed Hiraeth excerpt only after playback is confirmed. Soundtrack volume is muted during the demonstrated pause and reduced with the volume change. This is editorial audio, not a sample-accurate system recording; it must not be described as one. On-screen English credit and every social caption identify Scott Buckley and CC BY 4.0; see ASSET-LICENSES.md. GIF is silent.
+
+## Capture boundary
+Normal startup/SMTC background monitoring is detached for a clean recorder-owned window. Real search, result selection, network URL resolution, FFmpeg decoding, and LocalPlayer playback are unchanged. The recorder does not clear personal stored history or show the History tab. Invoking real search/play may add the demonstration query/track to the app's normal history. Network wait compression is disclosed in the exports and README. Capture provenance records real player positions, not signed audio URLs.

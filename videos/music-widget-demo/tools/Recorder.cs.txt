@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
@@ -12,102 +14,170 @@ using MusicWidget;
 
 static class Recorder
 {
-    const BindingFlags Flags=BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.DeclaredOnly;
-    static readonly Type T=typeof(MainWindow);
-    static object? Call(MainWindow w,string method,params object?[] args)=>T.GetMethod(method,Flags)!.Invoke(w,args);
-    static void Set(MainWindow w,string name,object value)=>T.GetField(name,Flags)!.SetValue(w,value);
-    static U Find<U>(MainWindow w,string name) where U:class=>w.FindName(name) as U??throw new Exception(name);
-    static void Click(MainWindow w,string name)=>((IInvokeProvider)new ButtonAutomationPeer(Find<Button>(w,name)).GetPattern(PatternInterface.Invoke)!).Invoke();
+    const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+    const string Query = "Scott Buckley Hiraeth";
+    const string LicensedVideoId = "XPZL2yFOeA8";
+    const int Fps = 15, Width = 1120, Height = 960, Total = 420;
+    static readonly Type T = typeof(MainWindow);
+    static object? Call(MainWindow w, string method, params object?[] args) => T.GetMethod(method, Flags)!.Invoke(w, args);
+    static void Set(MainWindow w, string name, object value) => T.GetField(name, Flags)!.SetValue(w, value);
+    static U? Field<U>(MainWindow w, string name) => (U?)T.GetField(name, Flags)!.GetValue(w);
+    static U Find<U>(MainWindow w, string name) where U : class => w.FindName(name) as U ?? throw new Exception(name);
+    static void Click(MainWindow w, string name) => ((IInvokeProvider)new ButtonAutomationPeer(Find<Button>(w, name)).GetPattern(PatternInterface.Invoke)!).Invoke();
+    static string SafeError(Exception error) => Regex.Replace(error.GetBaseException().Message, @"https?://\S+", "[URL omitted]");
+
     [STAThread] static int Main(string[] args)
     {
-        var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};
-        var output=args[0];Directory.CreateDirectory(output);
-        var w=new MainWindow();
-        w.Loaded-=(RoutedEventHandler)Delegate.CreateDelegate(typeof(RoutedEventHandler),w,T.GetMethod("OnLoaded",Flags)!);
-        Set(w,"_language",UiLanguage.Id);Call(w,"ApplyLanguage");Set(w,"_userMoved",true);
-        w.Left=80;w.Top=80;w.Topmost=false;
-        var events=new List<object>();
-        var metadata=new List<object>();
-        const int fps=30, width=1120, height=520, total=480;
-        int frame=0;
-        var timer=new DispatcherTimer(DispatcherPriority.Render){Interval=TimeSpan.FromMilliseconds(1000d/fps)};
-        var canvas=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);
-        var bitmap=new RenderTargetBitmap(680,256,192,192,PixelFormats.Pbgra32);
-        var drawing=new DrawingVisual();
-        void Action(string action,string? control,Action invoke)
+        var output = args[0];
+        Directory.CreateDirectory(output);
+        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        var w = new MainWindow();
+        w.Loaded -= (RoutedEventHandler)Delegate.CreateDelegate(typeof(RoutedEventHandler), w, T.GetMethod("OnLoaded", Flags)!);
+        Set(w, "_language", UiLanguage.En);
+        Set(w, "_userMoved", true);
+        // Suppress only autocomplete during scripted typing, so personal suggestions never enter the footage.
+        // Search and playback still run the application's unmodified network and player implementations.
+        Set(w, "_suppressTextChange", true);
+        Call(w, "ApplyLanguage");
+        w.Left = 80; w.Top = 80; w.Topmost = false;
+        var events = new List<object>();
+        var metadata = new List<object>();
+        var elapsed = Stopwatch.StartNew();
+        var wait = Stopwatch.StartNew();
+        int frame = 0, resultCount = 0;
+        string? selectedTitle = null;
+        double playbackStart = 0;
+        var canvas = new RenderTargetBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap(680, 256, 192, 192, PixelFormats.Pbgra32);
+        var drawing = new DrawingVisual();
+        var timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromSeconds(1d / Fps) };
+        void Mark(string action, string? control, Action invoke)
         {
-            Point? point=null;
-            if(control is not null)
+            Point? point = null;
+            if (control is not null)
             {
-                var element=Find<FrameworkElement>(w,control);
-                var p=element.TranslatePoint(new Point(element.ActualWidth/2,element.ActualHeight/2),w);
-                point=new Point((width-w.ActualWidth*2)/2+p.X*2,(height-w.ActualHeight*2)/2+p.Y*2);
+                var element = Find<FrameworkElement>(w, control);
+                var p = element.TranslatePoint(new Point(element.ActualWidth / 2, element.ActualHeight / 2), w);
+                point = new Point((Width - w.ActualWidth * 2) / 2 + p.X * 2, (Height - w.ActualHeight * 2) / 2 + p.Y * 2);
             }
-            events.Add(new{time=frame/(double)fps,action,control,x=point?.X,y=point?.Y});
+            events.Add(new { time = frame / (double)Fps, action, control, x = point?.X, y = point?.Y });
             invoke();
         }
-        timer.Tick+=(_,_)=>
+        void FinishFailure(Exception error)
+        {
+            timer.Stop(); Console.Error.WriteLine("CAPTURE FAILED: " + SafeError(error));
+            Environment.ExitCode = 1; app.Shutdown();
+        }
+        timer.Tick += (_, _) =>
         {
             try
             {
-                switch(frame)
+                if (elapsed.Elapsed.TotalSeconds > 150) throw new TimeoutException("YouTube demonstration exceeded its capture deadline");
+                if (frame == 105)
                 {
-                    case 54: Action("pause","PlayBtn",()=>Click(w,"PlayBtn"));break;
-                    case 84: Action("resume","PlayBtn",()=>Click(w,"PlayBtn"));break;
-                    case 120: Action("show-volume","VolumeToggleBtn",()=>Click(w,"VolumeToggleBtn"));break;
-                    case 150: Action("volume-70","VolumeSlider",()=>Find<Slider>(w,"VolumeSlider").Value=70);break;
-                    case 180: Action("volume-25","VolumeSlider",()=>Find<Slider>(w,"VolumeSlider").Value=25);break;
-                    case 228: Action("hide-volume","VolumeToggleBtn",()=>Click(w,"VolumeToggleBtn"));break;
-                    case 252: Action("expand","MaximizeBtn",()=>Click(w,"MaximizeBtn"));break;
-                    case 300: Action("compact","MaximizeBtn",()=>Click(w,"MaximizeBtn"));break;
-                    case 336: Action("minimize","MinimizeBtn",()=>Click(w,"MinimizeBtn"));break;
-                    case 369: Action("restore",null,()=>w.SummonFromTray());break;
-                    case 411: Action("close-search","SearchBtn",()=>Click(w,"SearchBtn"));break;
+                    if (Field<bool>(w, "_searchPending")) return;
+                    if (Field<string>(w, "_searchError") is { } searchError) throw new Exception(searchError);
+                    var hits = Field<IReadOnlyList<YtResult>>(w, "_searchResults")!;
+                    resultCount = hits.Count;
+                    if (hits.Any(h => h.Title.Contains('\uFFFD'))) throw new Exception("YouTube metadata decoding is corrupted; configure the extractor to output UTF-8");
+                    if (!hits.Any(h => h.Id == LicensedVideoId)) throw new Exception("The licensed official upload is absent from the real search results");
+                    events.Add(new { time = frame / (double)Fps, action = "results-ready", count = resultCount });
                 }
-                Call(w,"OnTick",null,EventArgs.Empty);
-                w.UpdateLayout();canvas.Clear();
-                using(var context=drawing.RenderOpen())
+                if (frame == 165)
                 {
-                    if(w.IsVisible)
+                    var player = Field<LocalPlayer>(w, "_local");
+                    if (Find<TextBlock>(w, "TitleText").Text == "Load failed") throw new Exception("Actual YouTube playback failed: " + Find<TextBlock>(w, "ArtistText").Text);
+                    if (player is null || !player.IsPlaying || player.Duration.TotalSeconds < 20 || player.Position.TotalSeconds < .25)
                     {
-                        int bw=(int)Math.Ceiling(w.ActualWidth*2),bh=(int)Math.Ceiling(w.ActualHeight*2);
-                        if(bitmap.PixelWidth!=bw||bitmap.PixelHeight!=bh)bitmap=new RenderTargetBitmap(bw,bh,192,192,PixelFormats.Pbgra32);
-                        bitmap.Clear();bitmap.Render(w);
-                        context.DrawImage(bitmap,new Rect((width-bw)/2d,(height-bh)/2d,bw,bh));
+                        if (wait.Elapsed.TotalSeconds > 75) throw new TimeoutException("The actual YouTube stream never entered advancing playback");
+                        return;
+                    }
+                    playbackStart = player.Position.TotalSeconds;
+                    events.Add(new { time = frame / (double)Fps, action = "playback-confirmed", position = playbackStart, duration = player.Duration.TotalSeconds });
+                }
+                if (frame >= 30 && frame < 30 + Query.Length * 2 && frame % 2 == 0)
+                    Find<TextBox>(w, "SearchBox").Text = Query[..((frame - 30) / 2 + 1)];
+                switch (frame)
+                {
+                    case 15: Mark("open-search", "SearchBtn", () => Click(w, "SearchBtn")); break;
+                    case 75:
+                        Set(w, "_suppressTextChange", false);
+                        Mark("search-youtube", "SearchBtn", () => Click(w, "SearchBtn"));
+                        break;
+                    case 135:
+                        var results = Find<ListBox>(w, "Results");
+                        var chosen = results.Items.OfType<PlayerItem>().Single(i => i.Track?.Id == LicensedVideoId);
+                        selectedTitle = chosen.Track!.Title;
+                        var row = (FrameworkElement?)results.ItemContainerGenerator.ContainerFromItem(chosen) ?? throw new Exception("Actual result row is not realized");
+                        var p = row.TranslatePoint(new Point(row.ActualWidth / 2, row.ActualHeight / 2), w);
+                        events.Add(new { time = frame / (double)Fps, action = "choose-result", videoId = LicensedVideoId, x = (Width - w.ActualWidth * 2) / 2 + p.X * 2, y = (Height - w.ActualHeight * 2) / 2 + p.Y * 2 });
+                        results.SelectedItem = chosen;
+                        wait.Restart();
+                        break;
+                    case 195: Mark("pause", "PlayBtn", () => Click(w, "PlayBtn")); break;
+                    case 210:
+                        if (Field<LocalPlayer>(w, "_local")!.IsPlaying) throw new Exception("Pause did not pause the real player");
+                        Mark("resume", "PlayBtn", () => Click(w, "PlayBtn")); break;
+                    case 240: Mark("show-volume", "VolumeToggleBtn", () => Click(w, "VolumeToggleBtn")); break;
+                    case 255: Mark("volume-40", "VolumeSlider", () => Find<Slider>(w, "VolumeSlider").Value = 40); break;
+                    case 285: Mark("hide-volume", "VolumeToggleBtn", () => Click(w, "VolumeToggleBtn")); break;
+                    case 300: Mark("compact", "MaximizeBtn", () => Click(w, "MaximizeBtn")); break;
+                    case 315: Mark("expand", "MaximizeBtn", () => Click(w, "MaximizeBtn")); break;
+                    case 330: Mark("compact", "MaximizeBtn", () => Click(w, "MaximizeBtn")); break;
+                    case 345: Mark("minimize", "MinimizeBtn", () => Click(w, "MinimizeBtn")); break;
+                    case 365: Mark("restore", null, () => w.SummonFromTray()); break;
+                    case 390:
+                        Set(w, "_suppressTextChange", true);
+                        Find<TextBox>(w, "SearchBox").Clear();
+                        Mark("close-search", "SearchBtn", () => Click(w, "SearchBtn")); break;
+                }
+                var local = Field<LocalPlayer>(w, "_local");
+                if (local is not null) Call(w, "OnTick", null, EventArgs.Empty);
+                w.UpdateLayout(); canvas.Clear();
+                using (var context = drawing.RenderOpen())
+                {
+                    if (w.IsVisible)
+                    {
+                        int bw = (int)Math.Ceiling(w.ActualWidth * 2), bh = (int)Math.Ceiling(w.ActualHeight * 2);
+                        if (bw > Width || bh > Height) throw new Exception("Actual widget exceeds the recording canvas");
+                        if (bitmap.PixelWidth != bw || bitmap.PixelHeight != bh) bitmap = new RenderTargetBitmap(bw, bh, 192, 192, PixelFormats.Pbgra32);
+                        bitmap.Clear(); bitmap.Render(w);
+                        context.DrawImage(bitmap, new Rect((Width - bw) / 2d, (Height - bh) / 2d, bw, bh));
                     }
                 }
                 canvas.Render(drawing);
-                var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(canvas));
-                using(var file=File.Create(Path.Combine(output,$"{frame:D5}.png")))encoder.Save(file);
-                metadata.Add(new{frame,time=frame/(double)fps,visible=w.IsVisible,width=w.ActualWidth,height=w.ActualHeight});
+                var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(canvas));
+                using (var file = File.Create(Path.Combine(output, $"{frame:D5}.png"))) encoder.Save(file);
+                metadata.Add(new { frame, time = frame / (double)Fps, visible = w.IsVisible, width = w.ActualWidth, height = w.ActualHeight, playing = local?.IsPlaying ?? false, position = local?.Position.TotalSeconds ?? 0, duration = local?.Duration.TotalSeconds ?? 0, volume = local?.Volume ?? 0 });
                 frame++;
-                if(frame==total)
+                if (frame == Total)
                 {
-                    timer.Stop();File.WriteAllText(Path.Combine(output,"events.json"),JsonSerializer.Serialize(events));
-                    File.WriteAllText(Path.Combine(output,"frames.json"),JsonSerializer.Serialize(metadata));
-                    Console.WriteLine($"CAPTURED {frame} real WPF frames, {fps}fps, {width}x{height}; actual LocalPlayer and controls; no personal desktop/history.");
+                    if (local is null || !local.IsPlaying || local.Position.TotalSeconds <= playbackStart + 5) throw new Exception("YouTube playback did not continue through the demo");
+                    if (Math.Abs(local.Volume - .4) > .001) throw new Exception("Actual player volume differs from the demonstrated slider");
+                    timer.Stop();
+                    File.WriteAllText(Path.Combine(output, "events.json"), JsonSerializer.Serialize(events));
+                    File.WriteAllText(Path.Combine(output, "frames.json"), JsonSerializer.Serialize(metadata));
+                    File.WriteAllText(Path.Combine(output, "provenance.json"), JsonSerializer.Serialize(new { query = Query, video_id = LicensedVideoId, title = selectedTitle, result_count = resultCount, fps = Fps, frames = Total, source_seconds = Total / (double)Fps, real_elapsed_seconds = elapsed.Elapsed.TotalSeconds, playback_start = playbackStart, playback_end = local.Position.TotalSeconds, live_search = true, real_youtube_stream = true, language = "en", license = "CC BY 4.0", license_source = "https://www.scottbuckley.com.au/library/hiraeth/", note = "Long network waits are omitted from the exported timeline. No search results, stream URLs or playback metadata are substituted." }));
+                    Console.WriteLine($"CAPTURED {frame} real WPF frames, {Fps}fps, {Width}x{Height}; actual YouTube search returned {resultCount} results; official video {LicensedVideoId}; playback advanced {playbackStart:F2}s -> {local.Position.TotalSeconds:F2}s; English UI.");
                     app.Shutdown();
                 }
             }
-            catch(Exception e){timer.Stop();Console.Error.WriteLine(e);Environment.ExitCode=1;app.Shutdown();}
+            catch (Exception error) { FinishFailure(error); }
         };
-        RoutedEventHandler? ready=null;
-        ready=async(_,_)=>
+        RoutedEventHandler? ready = null;
+        ready = async (_, _) =>
         {
-            w.Loaded-=ready;
+            w.Loaded -= ready;
             try
             {
-                Find<Slider>(w,"VolumeSlider").Value=50;
-                await (Task)Call(w,"PlayLocalFileAsync",args[1])!;
-                var player=(LocalPlayer)T.GetField("_local",Flags)!.GetValue(w)!;
-                var deadline=DateTime.UtcNow.AddSeconds(8);
-                while(player.Duration.TotalSeconds<30&&DateTime.UtcNow<deadline)await Task.Delay(30);
-                if(!player.IsPlaying||player.Duration.TotalSeconds<30)throw new Exception("Original demo WAV did not enter actual playback");
-                timer.Start();
+                Find<Slider>(w, "VolumeSlider").Value = 60;
+                Click(w, "MaximizeBtn");
+                await Dispatcher.Yield(DispatcherPriority.Background);
+                elapsed.Restart(); timer.Start();
             }
-            catch(Exception e){Console.Error.WriteLine(e);Environment.ExitCode=1;app.Shutdown();}
+            catch (Exception error) { FinishFailure(error); }
         };
-        w.Loaded+=ready;
+        w.Loaded += ready;
         app.Run(w);
         return Environment.ExitCode;
     }

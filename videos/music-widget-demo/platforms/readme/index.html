@@ -1,58 +1,65 @@
 <!doctype html>
-<html lang="id"><head><meta charset="utf-8"><title>Music Widget — readme</title>
+<html lang="en"><head><meta charset="utf-8"><title>Music Widget — readme</title>
 <script src="assets/gsap.min.js"></script>
 <style>
 @font-face{font-family:Demo;src:url('assets/DemoSans-Regular.ttf');font-weight:400}
 @font-face{font-family:Demo;src:url('assets/DemoSans-Bold.ttf');font-weight:700}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
-#main{position:relative;width:960px;height:540px;background:#101914;color:#f5f5f5;font-family:Demo,sans-serif;overflow:hidden}
+#main{position:relative;width:960px;height:640px;background:#101914;color:#f5f5f5;font-family:Demo,sans-serif;overflow:hidden}
 .stage{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,#214b33 0%,#13251b 40%,#101914 74%)}
 .brand,.heading,.labels,.foot,.note{z-index:2}
 .brand{position:absolute;top:18px;left:45px;display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700}
 .brand img{width:28px;height:28px}
 .heading{position:absolute;left:45px;top:38px;width:700px}
-h1{font-size:40px;line-height:1.06;letter-spacing:-1.8px;margin:22px 0 0;font-weight:700}
-.subtitle{font-size:18px;line-height:1.4;color:#b5b5b5;margin-top:10px}
-.labels{position:absolute;top:164px;left:45px;width:830px;height:60px}
+h1{font-size:34px;line-height:1.06;letter-spacing:-1.8px;margin:22px 0 0;font-weight:700}
+.subtitle{font-size:30px;line-height:1.4;color:#b5b5b5;margin-top:24px;display:none}
+.labels{position:absolute;top:112px;left:45px;width:830px;height:60px}
 .step{position:absolute;opacity:0;visibility:hidden;font-size:21px;line-height:1.4;font-weight:700}
 .step span{color:#7ee7a2;margin-right:18px;font-weight:400}
-.hero{position:absolute;left:-80.0px;top:60px;width:1120px;height:520px;transform-origin:50% 50%}
-video,.end-still{position:absolute;width:1120px;height:520px;inset:0;object-fit:contain}
+.hero{position:absolute;left:-80.0px;top:-110px;width:1120px;height:960px;transform-origin:50% 50%}
+video,.end-still{position:absolute;width:1120px;height:960px;inset:0;object-fit:contain}
 .end-still{opacity:0;visibility:hidden}
 .pulse{position:absolute;width:32px;height:32px;margin:-16px;border:3px solid #9cf4ba;border-radius:50%;opacity:0;pointer-events:none}
-.foot{position:absolute;top:452px;left:45px;width:850px}
+.foot{position:absolute;top:548px;left:45px;width:850px}
 .cta{font-size:24px;font-weight:700;line-height:1.25;opacity:0;visibility:hidden}
 .repo{font-size:17px;color:#b5b5b5;line-height:1.4;margin-top:8px;opacity:0;visibility:hidden}
-.note{position:absolute;left:45px;top:518px;color:#b5b5b5;font-size:12px}
+.note{position:absolute;left:45px;top:620px;color:#b5b5b5;font-size:12px}
 </style></head><body>
-<div id="main" data-composition-id="main" data-width="960" data-height="540" data-duration="18">
+<div id="main" data-composition-id="main" data-width="960" data-height="640" data-duration="30">
 <div class="stage" data-layout-ignore></div>
 <div class="brand"><img src="assets/icon.png" alt="">Simple Music Widget</div>
-<div class="heading"><h1>Musik tetap dekat.</h1><div class="subtitle">Kontrol musik dari desktop Windows.</div></div>
-<div class="labels"><div class="step step-0"><span>01</span>Putar & jeda</div><div class="step step-1"><span>02</span>Atur volume</div><div class="step step-2"><span>03</span>Lebarkan saat perlu</div><div class="step step-3"><span>04</span>Sembunyikan sementara</div><div class="step step-4"><span>05</span>Tampilkan lagi</div></div>
+<div class="heading"><h1>Search. Play. Stay focused.</h1><div class="subtitle"></div></div>
+<div class="labels"><div class="step step-0"><span>01</span>Open YouTube search</div><div class="step step-1"><span>02</span>Type a song or artist</div><div class="step step-2"><span>03</span>Get live search results</div><div class="step step-3"><span>04</span>Choose a track</div><div class="step step-4"><span>05</span>Play. Pause. Resume.</div><div class="step step-5"><span>06</span>Set your volume</div><div class="step step-6"><span>07</span>Compact or expanded</div><div class="step step-7"><span>08</span>Hide to the tray</div><div class="step step-8"><span>09</span>Bring it back</div></div>
 <div class="hero" data-layout-allow-overflow>
-<video id="widget" src="assets/widget-source.webm" data-start="1" data-duration="16" data-track-index="1" muted playsinline></video>
-<img class="end-still" src="assets/widget-final.png" alt="Music Widget setelah dipulihkan">
-<div class="pulse pulse-0" style="left:540px;top:332px"></div><div class="pulse pulse-1" style="left:540px;top:332px"></div><div class="pulse pulse-2" style="left:796px;top:332px"></div><div class="pulse pulse-5" style="left:796px;top:312px"></div><div class="pulse pulse-6" style="left:810px;top:178px"></div><div class="pulse pulse-7" style="left:990px;top:178px"></div><div class="pulse pulse-8" style="left:766px;top:178px"></div><div class="pulse pulse-10" style="left:678px;top:117.41px"></div>
+<video id="widget" src="assets/widget-source.webm" data-start="1" data-duration="28" data-track-index="1" muted playsinline></video>
+<img class="end-still" src="assets/widget-final.png" alt="Music Widget playing a YouTube search result">
+<div class="pulse pulse-0" style="left:858px;top:398px"></div><div class="pulse pulse-1" style="left:858px;top:337.40999999999997px"></div><div class="pulse pulse-3" style="left:543px;top:506.59px"></div><div class="pulse pulse-5" style="left:540px;top:552px"></div><div class="pulse pulse-6" style="left:540px;top:552px"></div><div class="pulse pulse-7" style="left:796px;top:552px"></div><div class="pulse pulse-9" style="left:796px;top:532px"></div><div class="pulse pulse-10" style="left:990px;top:398px"></div><div class="pulse pulse-11" style="left:810px;top:398px"></div><div class="pulse pulse-12" style="left:990px;top:398px"></div><div class="pulse pulse-13" style="left:766px;top:398px"></div><div class="pulse pulse-15" style="left:678px;top:337.40999999999997px"></div>
 </div>
-<div class="foot"><div class="cta">Gratis. Open source. Windows.</div><div class="repo">Wayan123 / Simple-Music-Widget</div></div>
-<div class="note">Rekaman aplikasi nyata · demo file lokal · tanpa suara</div>
+<div class="foot"><div class="cta">Free. Open source. Windows.</div><div class="repo">Wayan123 / Simple-Music-Widget</div></div>
+<div class="note">Live YouTube demo · Network waits shortened · Silent GIF</div>
 
 </div><script>
 const tl=gsap.timeline({paused:true});
-tl.set('.hero',{scale:0.83},0);
+tl.set('.hero',{scale:0.6},0);
 tl.from('.heading',{y:22,opacity:0,duration:.6,ease:'power3.out'},0);
-tl.set(".step-0", {autoAlpha:1}, 1).set(".step-0", {autoAlpha:0}, 5);
-tl.set(".step-1", {autoAlpha:1}, 5).set(".step-1", {autoAlpha:0}, 9.4);
-tl.set(".step-2", {autoAlpha:1}, 9.4).set(".step-2", {autoAlpha:0}, 12.2);
-tl.set(".step-3", {autoAlpha:1}, 12.2).set(".step-3", {autoAlpha:0}, 13.3);
-tl.set(".step-4", {autoAlpha:1}, 13.3).set(".step-4", {autoAlpha:0}, 17);
-tl.to('.hero',{scale:0.79,duration:.35,ease:'power2.inOut'},9.05);
-tl.to('.hero',{scale:0.83,duration:.35,ease:'power2.inOut'},11.05);
-tl.fromTo(".pulse-0",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 2.8);tl.fromTo(".pulse-1",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 3.8);tl.fromTo(".pulse-2",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 5);tl.fromTo(".pulse-5",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 8.6);tl.fromTo(".pulse-6",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 9.4);tl.fromTo(".pulse-7",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 11);tl.fromTo(".pulse-8",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 12.2);tl.fromTo(".pulse-10",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 14.7);
-tl.set('.end-still',{autoAlpha:1},17);
-tl.fromTo('.cta',{y:16,autoAlpha:0},{y:0,autoAlpha:1,duration:.45,ease:'power3.out',immediateRender:false},16);
-tl.to('.repo',{autoAlpha:1,duration:.35},16.4);
-tl.set('.brand',{opacity:1},18);
+tl.set(".step-0", {autoAlpha:1}, 1).set(".step-0", {autoAlpha:0}, 3);
+tl.set(".step-1", {autoAlpha:1}, 3).set(".step-1", {autoAlpha:0}, 6);
+tl.set(".step-2", {autoAlpha:1}, 6).set(".step-2", {autoAlpha:0}, 10);
+tl.set(".step-3", {autoAlpha:1}, 10).set(".step-3", {autoAlpha:0}, 12);
+tl.set(".step-4", {autoAlpha:1}, 12).set(".step-4", {autoAlpha:0}, 17);
+tl.set(".step-5", {autoAlpha:1}, 17).set(".step-5", {autoAlpha:0}, 21);
+tl.set(".step-6", {autoAlpha:1}, 21).set(".step-6", {autoAlpha:0}, 24);
+tl.set(".step-7", {autoAlpha:1}, 24).set(".step-7", {autoAlpha:0}, 25.333333333333332);
+tl.set(".step-8", {autoAlpha:1}, 25.333333333333332).set(".step-8", {autoAlpha:0}, 29);
+tl.to('.hero',{scale:0.95,duration:.25,ease:'power2.inOut'},21.05);
+tl.to('.hero',{scale:0.6,duration:.2,ease:'power2.inOut'},21.8);
+tl.to('.hero',{scale:0.95,duration:.25,ease:'power2.inOut'},23.05);
+tl.fromTo(".pulse-0",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 2);tl.fromTo(".pulse-1",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 6);tl.fromTo(".pulse-3",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 10);tl.fromTo(".pulse-5",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 14);tl.fromTo(".pulse-6",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 15);tl.fromTo(".pulse-7",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 17);tl.fromTo(".pulse-9",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 20);tl.fromTo(".pulse-10",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 21);tl.fromTo(".pulse-11",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 22);tl.fromTo(".pulse-12",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 23);tl.fromTo(".pulse-13",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 24);tl.fromTo(".pulse-15",{scale:.5,opacity:1},{scale:1.65,opacity:0,duration:.5,ease:"power2.out",immediateRender:false}, 27);
+tl.set('.end-still',{autoAlpha:1},28);
+tl.set('.hero',{scale:0.6},28);
+tl.set('.step',{autoAlpha:0},28);
+tl.fromTo('.cta',{y:16,autoAlpha:0},{y:0,autoAlpha:1,duration:.45,ease:'power3.out',immediateRender:false},28);
+tl.to('.repo',{autoAlpha:1,duration:.35},28.4);
+tl.set('.brand',{opacity:1},30);
 window.__timelines=window.__timelines||{};window.__timelines.main=tl;tl.seek(0);
 </script></body></html>

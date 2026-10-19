@@ -1,69 +1,81 @@
-# Caption siap salin
+# English captions — ready to copy
 
-Semua video memakai rekaman aplikasi nyata dan musik instrumental orisinal yang dibuat untuk demo ini. Tautan mengarah ke branch perbaikan window yang direkam, bukan klaim bahwa build tersebut sudah menjadi rilis default. Tidak ada posting otomatis. Sesuaikan URL setelah perubahan masuk ke branch utama.
+All four exports use English on-screen text and a real English application UI. The recording searches YouTube, selects the official Hiraeth upload, and verifies advancing playback. Longer network waits are shortened. Audio is edited for the export, not recorded from the system mixer. Keep the music credit in every post; YouTube specifically requires it in the description.
 
 ## Instagram Reels
 
-Musik jalan, fokus tetap. 🎵
+Your music. One small widget. 🎵
 
-Simple Music Widget menaruh kontrol musik di desktop Windows: putar/jeda, atur volume, lebarkan widget, lalu sembunyikan dan tampilkan lagi saat perlu.
+Search YouTube, pick a song, and control playback right from your Windows desktop. Pause, change the volume, resize, hide, and bring it back when you need it.
 
-Gratis dan open source. Demo ini pakai file audio lokal.
+Simple Music Widget is free and open source. This is the real app, not a mockup; longer network waits are shortened.
 
-Kamu lebih suka widget compact atau lebar? Tulis di komentar.
+Compact or expanded — which fits your desktop?
 
-Source & cara pakai:
-https://github.com/Wayan123/Simple-Music-Widget/tree/fix/window-lifecycle-resize
+Source & setup:
+https://github.com/Wayan123/Simple-Music-Widget
 
-#MusicWidget #WindowsDesktop #DesktopSetup #OpenSource #Produktivitas
+Music: 'Hiraeth' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+Edited excerpt; original intro music.
 
-Catatan posting: gunakan `music-widget-instagram-reels.mp4`. Jika ingin CTA profil, pasang URL repo di profil lebih dulu; caption ini tidak mengasumsikan link profil sudah tersedia.
+#MusicWidget #WindowsDesktop #DesktopSetup #OpenSource #YouTubeMusic
+
+Posting note: use `music-widget-instagram-reels.mp4`. Do not replace the music credit with a vague “no copyright” claim. Add a profile link before using a “link in bio” CTA.
 
 ## Threads
 
-Saya bikin music widget kecil untuk Windows supaya kontrol musik tetap dekat saat lagi kerja.
+I built a tiny Windows music widget: search YouTube, choose a track, and control playback without leaving your desktop.
 
-Di demo ini: play/pause, volume, expand/compact, lalu hide dan tampilkan lagi. Yang direkam aplikasinya langsung, dengan file audio lokal.
+Real app footage; longer waits shortened. Free & open source:
+https://github.com/Wayan123/Simple-Music-Widget
 
-Gratis & open source. Mau coba atau kasih masukan?
-https://github.com/Wayan123/Simple-Music-Widget/tree/fix/window-lifecycle-resize
+Compact or expanded?
 
-Kalian biasanya butuh kontrol apa yang selalu kelihatan di desktop?
+Music: 'Hiraeth' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au (edited excerpt; original intro)
 
-Catatan posting: gunakan `music-widget-threads.mp4`. Teks di atas sengaja pendek untuk percakapan, tanpa deretan hashtag.
+Posting note: use `music-widget-threads.mp4`. Keep the credit when shortening this caption.
 
 ## TikTok
 
-Masih pindah tab cuma buat pause musik? 🎵
+Search YouTube. Hit play. Stay in your flow. 🎵
 
-Coba kontrolnya dari widget di desktop Windows: play/pause, volume, expand, hide, lalu munculkan lagi.
+A tiny Windows widget for music search, playback, volume, resizing, and hide/restore.
 
-Simple Music Widget — gratis & open source. Demo pakai file lokal.
+Free & open source. Real app demo; longer waits shortened.
 
-Tim compact atau tim lebar?
+Compact or expanded?
+https://github.com/Wayan123/Simple-Music-Widget
 
-Source & cara pakai:
-https://github.com/Wayan123/Simple-Music-Widget/tree/fix/window-lifecycle-resize
+Music: 'Hiraeth' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+Edited excerpt; original intro music.
 
-#MusicWidget #WindowsTips #DesktopSetup #OpenSource #Produktivitas
+#WindowsTips #MusicWidget #DesktopSetup #OpenSource #YouTubeMusic
 
-Catatan posting: gunakan `music-widget-tiktok.mp4`. Tidak mengklaim tautan caption dapat diklik; bila memakai link profil, tambahkan sendiri setelah URL profil benar-benar dipasang.
+Posting note: use `music-widget-tiktok.mp4`. Caption links are not assumed clickable; use a profile link only after setting it up.
 
 ## YouTube Shorts
 
-### Judul
-Music Widget untuk Windows: Play, Volume & Hide/Restore #Shorts
+### Title
+Search & Play YouTube Music in a Tiny Windows Widget #Shorts
 
-### Deskripsi
-Kontrol musik dari widget kecil di desktop Windows. Demo langsung Simple Music Widget: putar/jeda, volume, expand/compact, sembunyikan, dan tampilkan lagi.
+### Description
+Search YouTube, select a song, and control it from your Windows desktop. Simple Music Widget is free and open source.
 
-Gratis dan open source. Rekaman ini memakai file audio lokal dan musik demo orisinal.
+This demo shows real YouTube search results and verified playback, plus pause/resume, volume, compact/expanded sizes, and hide/restore. Longer network waits are shortened; the export uses an edited music excerpt rather than live system audio.
 
-Source & cara pakai (branch yang direkam):
-https://github.com/Wayan123/Simple-Music-Widget/tree/fix/window-lifecycle-resize
+Source & setup:
+https://github.com/Wayan123/Simple-Music-Widget
 
-Compact atau lebar — mana yang lebih cocok di desktop kamu?
+Music: 'Hiraeth' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
+Source: https://www.scottbuckley.com.au/library/hiraeth/
+License: https://creativecommons.org/licenses/by/4.0/
+Changes: excerpted, loudness-normalized, AAC-encoded, faded, and level-edited. Intro music is original.
 
-#Shorts #MusicWidget #Windows #OpenSource
+Official upload shown in the demo:
+https://www.youtube.com/watch?v=XPZL2yFOeA8
 
-Catatan posting: gunakan `music-widget-youtube-shorts.mp4`. Periksa kembali preview aplikasi platform sebelum menerbitkan; posisi antarmuka/caption platform dapat berubah.
+Compact or expanded — which would you use?
+
+#Shorts #Windows #MusicWidget #OpenSource
+
+Posting note: use `music-widget-youtube-shorts.mp4`. Retain the full Scott Buckley attribution in the video description. Review the platform's crop/text preview before publishing.
